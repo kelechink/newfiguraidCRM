@@ -181,6 +181,7 @@ model User {
   announcementAcks   AnnouncementAck[]
   dsrAssigned        DataSubjectRequest[]
   socialPosts        SocialPost[]
+  sopAssignments     SopAssignee[]
 }
 
 /// Units a user may act within (in addition to primaryUnit). Drives the UNIT permission scope.

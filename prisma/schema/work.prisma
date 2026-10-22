@@ -28,47 +28,56 @@ enum TaskSource {
   CHAT // created from an internal message
   CONVERSATION // created from inbox / AI routing
   TICKET
-  SOP_RECURRING
   SYSTEM // reminders, renewals
 }
 
-model Task {
-  id             String              @id @default(cuid())
-  unitId         String
-  unit           BusinessUnit        @relation(fields: [unitId], references: [id])
-  projectId      String?
-  project        Project?            @relation(fields: [projectId], references: [id])
-  title          String
-  description    String?
-  status         TaskStatus          @default(TODO)
-  priority       Priority            @default(MEDIUM)
-  dueAt          DateTime?
-  assigneeId     String?
-  assignee       User?               @relation("TaskAssignee", fields: [assigneeId], references: [id])
-  createdById    String
-  createdBy      User                @relation("TaskCreator", fields: [createdById], references: [id])
-  source         TaskSource          @default(MANUAL)
-  targetId       String?
-  target         WeeklyTarget?       @relation(fields: [targetId], references: [id])
-  sopId          String?
-  sop            Sop?                @relation(fields: [sopId], references: [id])
-  conversationId String?
-  conversation   Conversation?       @relation(fields: [conversationId], references: [id])
-  chatMessageId  String?             @unique
-  chatMessage    ChatMessage?        @relation("MessageTask", fields: [chatMessageId], references: [id])
-  ticketId       String?
-  ticket         Ticket?             @relation(fields: [ticketId], references: [id])
-  recurrenceRule String? // RRULE for recurring SOP tasks
-  startedAt      DateTime?
-  completedAt    DateTime?
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
-  comments       TaskComment[]
-  checklist      TaskChecklistItem[]
-  attachments    TaskAttachment[]
+/// Who a task comes from — shown as a badge and filter on the board. Derived server-side, never user-chosen.
+enum TaskOrigin {
+  FOUNDER // created by the Super Admin (CEO)
+  TEAM_LEAD // created by a manager / ops manager / anyone else allowed to assign work
+  SOP // generated from an SOP template's schedule
+}
 
+model Task {
+  id               String              @id @default(cuid())
+  unitId           String
+  unit             BusinessUnit        @relation(fields: [unitId], references: [id])
+  projectId        String?
+  project          Project?            @relation(fields: [projectId], references: [id])
+  title            String
+  description      String?
+  status           TaskStatus          @default(TODO)
+  priority         Priority            @default(MEDIUM)
+  dueAt            DateTime?
+  assigneeId       String?
+  assignee         User?               @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  createdById      String
+  createdBy        User                @relation("TaskCreator", fields: [createdById], references: [id])
+  origin           TaskOrigin
+  source           TaskSource          @default(MANUAL)
+  boardRank        String // fractional index: order within a board column
+  targetId         String?
+  target           WeeklyTarget?       @relation(fields: [targetId], references: [id])
+  sopId            String?
+  sop              Sop?                @relation(fields: [sopId], references: [id])
+  conversationId   String?
+  conversation     Conversation?       @relation(fields: [conversationId], references: [id])
+  chatMessageId    String?             @unique
+  chatMessage      ChatMessage?        @relation("MessageTask", fields: [chatMessageId], references: [id])
+  ticketId         String?
+  ticket           Ticket?             @relation(fields: [ticketId], references: [id])
+  sopOccurrenceKey String? // "2026-10-22:<assigneeId>" — makes SOP generation idempotent
+  startedAt        DateTime?
+  completedAt      DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  comments         TaskComment[]
+  checklist        TaskChecklistItem[]
+  attachments      TaskAttachment[]
+
+  @@unique([sopId, sopOccurrenceKey])
   @@index([assigneeId, status, dueAt])
-  @@index([unitId, status])
+  @@index([unitId, status, boardRank])
 }
 
 model TaskComment {
@@ -100,19 +109,46 @@ model TaskAttachment {
   @@id([taskId, fileId])
 }
 
+enum SopFrequency {
+  DAILY // every working day (Mon–Fri)
+  WEEKLY // on the chosen weekdays
+  MONTHLY // on dayOfMonth (clamped to month end)
+  ON_DEMAND // template only; tasks created manually from it
+}
+
+/// SOP template: step-by-step procedure + a schedule that "Generate due tasks" turns into tasks.
 model Sop {
-  id        String        @id @default(cuid())
-  unitId    String?
-  unit      BusinessUnit? @relation(fields: [unitId], references: [id])
-  title     String
-  summary   String?
-  ownerId   String?
-  owner     User?         @relation(fields: [ownerId], references: [id])
-  version   Int           @default(1)
-  isActive  Boolean       @default(true)
-  updatedAt DateTime      @updatedAt
-  steps     SopStep[]
-  tasks     Task[]
+  id              String        @id @default(cuid())
+  unitId          String
+  unit            BusinessUnit  @relation(fields: [unitId], references: [id])
+  title           String
+  summary         String?
+  ownerId         String?
+  owner           User?         @relation(fields: [ownerId], references: [id])
+  version         Int           @default(1)
+  isActive        Boolean       @default(true)
+  frequency       SopFrequency  @default(WEEKLY)
+  weekdays        Int[]         @default([1]) // ISO weekday 1=Mon … 7=Sun, used by WEEKLY
+  dayOfMonth      Int? // used by MONTHLY
+  dueTime         String        @default("17:00") // HH:mm, Africa/Lagos
+  defaultPriority Priority      @default(MEDIUM)
+  startsOn        DateTime      @default(now()) @db.Date
+  lastGeneratedOn DateTime?     @db.Date
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  steps           SopStep[]
+  assignees       SopAssignee[]
+  tasks           Task[]
+}
+
+/// Each assignee receives their own task per occurrence.
+model SopAssignee {
+  sopId  String
+  userId String
+  sop    Sop    @relation(fields: [sopId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([sopId, userId])
 }
 
 model SopStep {
