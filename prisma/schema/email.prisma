@@ -1,0 +1,138 @@
+// ─── Module D: Email automation (Brevo) + consent / suppression ───────────────
+
+enum SequenceStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+model EmailSequence {
+  id             String               @id @default(cuid())
+  unitId         String
+  unit           BusinessUnit         @relation(fields: [unitId], references: [id])
+  name           String
+  status         SequenceStatus       @default(DRAFT)
+  stopOnReply    Boolean              @default(true)
+  stopOnPurchase Boolean              @default(true)
+  senderName     String
+  senderEmail    String
+  createdAt      DateTime             @default(now())
+  steps          SequenceStep[]
+  enrollments    SequenceEnrollment[]
+}
+
+/// Default cadence seeded as day 1, 3, 7, 14 then weekly.
+model SequenceStep {
+  id         String         @id @default(cuid())
+  sequenceId String
+  sequence   EmailSequence  @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+  position   Int
+  dayOffset  Int
+  subject    String
+  bodyHtml   String // authored via template editor; merge fields rendered server-side + sanitised
+  messages   EmailMessage[]
+
+  @@unique([sequenceId, position])
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  STOPPED_REPLY
+  STOPPED_PURCHASE
+  STOPPED_UNSUBSCRIBE
+  STOPPED_MANUAL
+  BOUNCED
+}
+
+model SequenceEnrollment {
+  id          String           @id @default(cuid())
+  sequenceId  String
+  sequence    EmailSequence    @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+  contactId   String
+  contact     Contact          @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  status      EnrollmentStatus @default(ACTIVE)
+  currentStep Int              @default(0)
+  nextRunAt   DateTime?
+  enrolledAt  DateTime         @default(now())
+  stoppedAt   DateTime?
+
+  @@unique([sequenceId, contactId])
+  @@index([status, nextRunAt])
+}
+
+model Broadcast {
+  id          String         @id @default(cuid())
+  unitId      String
+  unit        BusinessUnit   @relation(fields: [unitId], references: [id])
+  name        String
+  subject     String
+  bodyHtml    String
+  segment     Json // filter definition over contacts (unit, tags, lifecycle, source)
+  status      String         @default("draft") // draft | scheduled | sending | sent
+  scheduledAt DateTime?
+  sentAt      DateTime?
+  createdAt   DateTime       @default(now())
+  messages    EmailMessage[]
+}
+
+enum EmailKind {
+  SEQUENCE
+  BROADCAST
+  TRANSACTIONAL
+  INBOX_REPLY
+}
+
+/// Every outbound email; Brevo webhooks write opens/clicks/replies back here + to the timeline.
+model EmailMessage {
+  id          String        @id @default(cuid())
+  kind        EmailKind
+  contactId   String?
+  contact     Contact?      @relation(fields: [contactId], references: [id])
+  toEmail     String
+  subject     String
+  stepId      String?
+  step        SequenceStep? @relation(fields: [stepId], references: [id])
+  broadcastId String?
+  broadcast   Broadcast?    @relation(fields: [broadcastId], references: [id])
+  template    String? // transactional template key: invoice, receipt, password_reset
+  providerId  String?       @unique // Brevo messageId
+  status      String        @default("queued") // queued | sent | delivered | bounced | failed
+  sentAt      DateTime?
+  openedAt    DateTime?
+  clickedAt   DateTime?
+  repliedAt   DateTime?
+  bouncedAt   DateTime?
+  createdAt   DateTime      @default(now())
+
+  @@index([contactId, createdAt])
+}
+
+model Suppression {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  reason    String // unsubscribe | hard_bounce | complaint | dsr_deletion
+  createdAt DateTime @default(now())
+}
+
+enum ConsentChannel {
+  EMAIL
+  WHATSAPP
+  SMS
+}
+
+/// Marketing consent capture (NDPA 2023). Latest row per (contact, channel) wins.
+model Consent {
+  id            String         @id @default(cuid())
+  contactId     String
+  contact       Contact        @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  channel       ConsentChannel
+  granted       Boolean
+  source        String // form slug, webchat, whatsapp opt-in, unsubscribe link
+  noticeVersion String?
+  ip            String?
+  createdAt     DateTime       @default(now())
+
+  @@index([contactId, channel, createdAt])
+}

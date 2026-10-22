@@ -1,0 +1,247 @@
+// ─── Module E: Telecom wholesale (TDM, CC, CLI) ───────────────────────────────
+// Principle: margin, not revenue. Buy rates & margins are gated by the
+// sensitive permissions "telecom.buy_rates" and "telecom.margins".
+
+enum CarrierType {
+  VENDOR
+  CUSTOMER
+  BOTH
+}
+
+enum CarrierSide {
+  VENDOR // we buy from them
+  CUSTOMER // we sell to them
+}
+
+enum PaymentMode {
+  PREPAID
+  POSTPAID
+}
+
+enum RouteType {
+  TDM
+  CC
+  CLI
+}
+
+model Carrier {
+  id             String           @id @default(cuid())
+  name           String           @unique
+  type           CarrierType
+  legalName      String?
+  country        String?
+  address        String?
+  nocEmail       String?
+  billingEmail   String?
+  ratesEmail     String?
+  contacts       Json? // [{name, role, phone, email}]
+  bankDetailsEnc String? // encrypted JSON (Security #13)
+  nettingEnabled Boolean          @default(false) // offset payables against receivables when BOTH
+  managerId      String?
+  manager        User?            @relation(fields: [managerId], references: [id])
+  notes          String?
+  isActive       Boolean          @default(true)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  accounts       CarrierAccount[]
+  deals          Deal[]
+  documents      Document[]
+}
+
+/// Commercial terms per side. A BOTH carrier has two accounts (vendor + customer).
+model CarrierAccount {
+  id               String               @id @default(cuid())
+  carrierId        String
+  carrier          Carrier              @relation(fields: [carrierId], references: [id], onDelete: Cascade)
+  side             CarrierSide
+  currency         Currency             @default(USD)
+  billingCycleDays Int                  @default(7) // "7/3" → cycle 7 days ...
+  paymentTermDays  Int                  @default(3) // ... due 3 days after invoice
+  incrementFirst   Int                  @default(60) // seconds: 60/60, 30/30, 1/1
+  incrementNext    Int                  @default(60)
+  paymentMode      PaymentMode          @default(POSTPAID)
+  creditLimit      Decimal?             @db.Decimal(18, 2) // postpaid customers
+  lowBalanceAlert  Decimal?             @db.Decimal(18, 2) // prepaid vendors
+  prepaidBalance   Decimal              @default(0) @db.Decimal(18, 4) // cached; ledger is the source of truth
+  cycleAnchor      DateTime             @default(now()) // first day of the first billing cycle
+  createdAt        DateTime             @default(now())
+  rates            Rate[]
+  vendorTraffic    TrafficEntry[]       @relation("TrafficVendor")
+  customerTraffic  TrafficEntry[]       @relation("TrafficCustomer")
+  ledger           PrepaidLedgerEntry[]
+  invoices         Invoice[]
+  bills            Bill[]
+  disputes         Dispute[]
+  payments         Payment[]
+  cdrImports       CdrImport[]
+  rateDecks        RateDeck[]
+
+  @@unique([carrierId, side])
+}
+
+model Route {
+  id           String         @id @default(cuid())
+  destination  String // "Nigeria – MTN Mobile"
+  prefix       String // dial code(s), e.g. "234803"
+  routeType    RouteType
+  qualityNotes String?
+  managerId    String?
+  manager      User?          @relation(fields: [managerId], references: [id])
+  isActive     Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  rates        Rate[]
+  traffic      TrafficEntry[]
+
+  @@unique([prefix, routeType])
+}
+
+/// Append-only rate history. Rating always uses the row effective at the traffic timestamp.
+model Rate {
+  id               String         @id @default(cuid())
+  routeId          String
+  route            Route          @relation(fields: [routeId], references: [id])
+  carrierAccountId String
+  carrierAccount   CarrierAccount @relation(fields: [carrierAccountId], references: [id])
+  ratePerMin       Decimal        @db.Decimal(14, 6)
+  currency         Currency
+  effectiveFrom    DateTime
+  effectiveTo      DateTime? // null = current; set when superseded
+  rateDeckId       String?
+  rateDeck         RateDeck?      @relation(fields: [rateDeckId], references: [id])
+  createdById      String
+  createdBy        User           @relation(fields: [createdById], references: [id])
+  createdAt        DateTime       @default(now())
+  buyTraffic       TrafficEntry[] @relation("TrafficBuyRate")
+  sellTraffic      TrafficEntry[] @relation("TrafficSellRate")
+
+  @@index([routeId, carrierAccountId, effectiveFrom])
+}
+
+model RateDeck {
+  id               String         @id @default(cuid())
+  carrierAccountId String
+  carrierAccount   CarrierAccount @relation(fields: [carrierAccountId], references: [id])
+  direction        String // import (vendor deck) | export (sent to customer)
+  fileId           String?
+  effectiveFrom    DateTime
+  rowCount         Int            @default(0)
+  uploadedById     String
+  uploadedBy       User           @relation(fields: [uploadedById], references: [id])
+  createdAt        DateTime       @default(now())
+  rates            Rate[]
+}
+
+enum TrafficSource {
+  MANUAL
+  CDR
+}
+
+/// Rated traffic: one row per route × vendor × customer × period (manual) or per CDR batch line.
+model TrafficEntry {
+  id                    String         @id @default(cuid())
+  periodStart           DateTime
+  periodEnd             DateTime
+  routeId               String
+  route                 Route          @relation(fields: [routeId], references: [id])
+  vendorAccountId       String
+  vendorAccount         CarrierAccount @relation("TrafficVendor", fields: [vendorAccountId], references: [id])
+  customerAccountId     String
+  customerAccount       CarrierAccount @relation("TrafficCustomer", fields: [customerAccountId], references: [id])
+  calls                 Int?
+  connectedCalls        Int? // ASR = connected / calls
+  rawSeconds            Int
+  vendorBilledMinutes   Decimal        @db.Decimal(18, 4) // after vendor increment
+  customerBilledMinutes Decimal        @db.Decimal(18, 4) // after customer increment
+  buyRateId             String?
+  buyRate               Rate?          @relation("TrafficBuyRate", fields: [buyRateId], references: [id])
+  sellRateId            String?
+  sellRate              Rate?          @relation("TrafficSellRate", fields: [sellRateId], references: [id])
+  costAmount            Decimal        @db.Decimal(18, 4)
+  revenueAmount         Decimal        @db.Decimal(18, 4)
+  currency              Currency
+  source                TrafficSource  @default(MANUAL)
+  cdrImportId           String?
+  cdrImport             CdrImport?     @relation(fields: [cdrImportId], references: [id])
+  invoiceId             String? // customer invoice that billed it
+  invoice               Invoice?       @relation(fields: [invoiceId], references: [id])
+  billId                String? // vendor statement that billed it
+  bill                  Bill?          @relation(fields: [billId], references: [id])
+  enteredById           String
+  enteredBy             User           @relation(fields: [enteredById], references: [id])
+  createdAt             DateTime       @default(now())
+
+  @@index([periodStart, routeId])
+  @@index([customerAccountId, periodStart])
+  @@index([vendorAccountId, periodStart])
+}
+
+model CdrImport {
+  id               String          @id @default(cuid())
+  carrierAccountId String?
+  carrierAccount   CarrierAccount? @relation(fields: [carrierAccountId], references: [id])
+  fileId           String
+  status           String          @default("pending") // pending | rating | done | failed
+  rowsTotal        Int             @default(0)
+  rowsRated        Int             @default(0)
+  rowsRejected     Int             @default(0)
+  errors           Json?
+  uploadedById     String
+  uploadedBy       User            @relation(fields: [uploadedById], references: [id])
+  createdAt        DateTime        @default(now())
+  traffic          TrafficEntry[]
+}
+
+enum LedgerType {
+  TOPUP
+  USAGE
+  ADJUSTMENT
+  REFUND
+}
+
+model PrepaidLedgerEntry {
+  id               String         @id @default(cuid())
+  carrierAccountId String
+  carrierAccount   CarrierAccount @relation(fields: [carrierAccountId], references: [id])
+  type             LedgerType
+  amount           Decimal        @db.Decimal(18, 4) // +topup, −usage
+  balanceAfter     Decimal        @db.Decimal(18, 4)
+  reference        String?
+  trafficEntryId   String?
+  occurredAt       DateTime       @default(now())
+  createdById      String?
+  createdBy        User?          @relation(fields: [createdById], references: [id])
+
+  @@index([carrierAccountId, occurredAt])
+}
+
+enum DisputeStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED_IN_OUR_FAVOUR
+  RESOLVED_IN_THEIR_FAVOUR
+  SETTLED
+  REJECTED
+}
+
+model Dispute {
+  id               String         @id @default(cuid())
+  carrierAccountId String
+  carrierAccount   CarrierAccount @relation(fields: [carrierAccountId], references: [id])
+  invoiceId        String?
+  invoice          Invoice?       @relation(fields: [invoiceId], references: [id])
+  billId           String?
+  bill             Bill?          @relation(fields: [billId], references: [id])
+  periodStart      DateTime
+  periodEnd        DateTime
+  ourMinutes       Decimal?       @db.Decimal(18, 4)
+  theirMinutes     Decimal?       @db.Decimal(18, 4)
+  ourAmount        Decimal?       @db.Decimal(18, 4)
+  theirAmount      Decimal?       @db.Decimal(18, 4)
+  status           DisputeStatus  @default(OPEN)
+  description      String
+  resolution       String?
+  openedById       String
+  openedBy         User           @relation(fields: [openedById], references: [id])
+  openedAt         DateTime       @default(now())
+  resolvedAt       DateTime?
+}

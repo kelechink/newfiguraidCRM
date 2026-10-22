@@ -1,0 +1,226 @@
+// ─── Module L: HR, onboarding, payroll, contract pack, exit ───────────────────
+// Salary / bank / ID fields are field-level encrypted and readable only with
+// "hr.salaries" / "hr.bank_details" (Super Admin, Admin, and the staff member).
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERN
+  NYSC
+}
+
+model StaffProfile {
+  id               String          @id @default(cuid())
+  userId           String          @unique
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  employeeNo       String          @unique
+  jobTitle         String
+  employmentType   EmploymentType
+  startDate        DateTime        @db.Date
+  probationEnds    DateTime?       @db.Date
+  phone            String?
+  personalEmail    String?
+  address          String?
+  dateOfBirth      DateTime?       @db.Date
+  nextOfKin        Json?
+  // encrypted (Security #13)
+  salaryEnc        String? // monthly gross, NGN
+  allowancesEnc    String? // JSON [{name, amount}]
+  bankNameEnc      String?
+  bankAccountEnc   String?
+  accountNameEnc   String?
+  idNumberEnc      String? // NIN / passport
+  idDocumentFileId String?
+  // work schedule
+  officeId         String?
+  office           Office?         @relation(fields: [officeId], references: [id])
+  resumeTime       String          @default("09:00") // HH:mm local
+  closeTime        String          @default("17:00")
+  workingDays      Int[]           @default([1, 2, 3, 4, 5]) // ISO weekday
+  graceMinutes     Int             @default(15)
+  remoteAllowed    Boolean         @default(false)
+  latenessPolicyId String?
+  latenessPolicy   LatenessPolicy? @relation(fields: [latenessPolicyId], references: [id])
+  onboardedAt      DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+}
+
+enum LatenessMode {
+  FIXED
+  TIERED
+}
+
+enum AbsenceMode {
+  DAILY_RATE // monthly salary ÷ working days in month
+  FIXED
+}
+
+/// Admin-configured once; applied automatically by payroll. Versioned via effectiveFrom.
+model LatenessPolicy {
+  id               String         @id @default(cuid())
+  name             String
+  unitId           String?
+  unit             BusinessUnit?  @relation(fields: [unitId], references: [id])
+  latenessMode     LatenessMode   @default(FIXED)
+  fixedAmount      Decimal?       @db.Decimal(18, 2) // ₦ per late day
+  tiers            Json? // [{fromMinutes, toMinutes, amount}] when TIERED
+  absenceMode      AbsenceMode    @default(DAILY_RATE)
+  absenceAmount    Decimal?       @db.Decimal(18, 2)
+  monthlyCapAmount Decimal?       @db.Decimal(18, 2)
+  monthlyCapPct    Decimal?       @db.Decimal(5, 2) // % of gross
+  effectiveFrom    DateTime
+  documentVersion  String? // signed lateness policy version this maps to
+  createdAt        DateTime       @default(now())
+  staff            StaffProfile[]
+}
+
+enum DeductionType {
+  LATENESS
+  ABSENCE
+  ADVANCE_REPAYMENT
+  OTHER
+}
+
+/// Visible to the staff member (self-service) and HR. Amounts aren't salaries, so not encrypted.
+model Deduction {
+  id          String         @id @default(cuid())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id])
+  dayId       String?
+  day         AttendanceDay? @relation(fields: [dayId], references: [id])
+  payslipId   String?
+  payslip     Payslip?       @relation(fields: [payslipId], references: [id])
+  type        DeductionType
+  amount      Decimal        @db.Decimal(18, 2)
+  reason      String // "Late 23 min on Tue 14 Oct (tier 16–30 min)"
+  status      String         @default("active") // active | waived | capped
+  periodMonth String // "2026-10"
+  createdAt   DateTime       @default(now())
+
+  @@index([userId, periodMonth])
+}
+
+enum PayrollStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED // admin approved
+  SIGNED_OFF // super admin sign-off when total > limit
+  PAID
+  CANCELLED
+}
+
+model PayrollRun {
+  id            String        @id @default(cuid())
+  periodMonth   String        @unique // "2026-10"
+  status        PayrollStatus @default(DRAFT)
+  totalNetEnc   String? // encrypted aggregates
+  totalGrossEnc String?
+  staffCount    Int           @default(0)
+  preparedById  String
+  preparedBy    User          @relation("PayrollPreparer", fields: [preparedById], references: [id])
+  approvedById  String?
+  approvedBy    User?         @relation("PayrollApprover", fields: [approvedById], references: [id])
+  approvedAt    DateTime?
+  signedOffById String?
+  signedOffBy   User?         @relation("PayrollSignoff", fields: [signedOffById], references: [id])
+  signedOffAt   DateTime?
+  paidAt        DateTime?
+  createdAt     DateTime      @default(now())
+  payslips      Payslip[]
+}
+
+model Payslip {
+  id           String      @id @default(cuid())
+  runId        String
+  run          PayrollRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User        @relation(fields: [userId], references: [id])
+  breakdownEnc String // encrypted JSON {base, allowances[], bonuses[], deductions[], statutory[], gross, net}
+  netPayEnc    String
+  pdfFileId    String?
+  emailedAt    DateTime?
+  createdAt    DateTime    @default(now())
+  deductions   Deduction[]
+
+  @@unique([runId, userId])
+}
+
+enum ContractKind {
+  EMPLOYMENT
+  NDA
+  IP_ASSIGNMENT
+  NON_SOLICITATION
+  ATTENDANCE_POLICY
+  CODE_OF_CONDUCT
+  DATA_PROTECTION
+  PROPERTY_RETURN
+  ADDENDUM
+  RESIGNATION_ACCEPTANCE
+  TERMINATION_LETTER
+  OFFER_LETTER
+}
+
+/// Admins edit templates (markdown + {{merge.fields}}), never signed contracts.
+model ContractTemplate {
+  id               String       @id @default(cuid())
+  kind             ContractKind
+  version          Int
+  title            String
+  body             String
+  status           String       @default("draft") // draft | approved | retired
+  inPack           Boolean      @default(true)
+  lawyerReviewedAt DateTime?
+  lawyerName       String?
+  createdAt        DateTime     @default(now())
+  documents        Document[]
+
+  @@unique([kind, version])
+}
+
+enum PackStatus {
+  GENERATED
+  SENT
+  STAFF_SIGNED
+  COMPLETED // countersigned by Super Admin
+  VOID
+}
+
+/// Generated automatically when onboarding completes; gates work modules until COMPLETED/STAFF_SIGNED.
+model ContractPack {
+  id             String     @id @default(cuid())
+  userId         String
+  user           User       @relation(fields: [userId], references: [id])
+  purpose        String     @default("onboarding") // onboarding | addendum | exit
+  status         PackStatus @default(GENERATED)
+  sentAt         DateTime?
+  lastReminderAt DateTime?
+  reminderCount  Int        @default(0)
+  completedAt    DateTime?
+  createdAt      DateTime   @default(now())
+  documents      Document[]
+}
+
+enum ExitType {
+  RESIGNATION
+  TERMINATION
+  END_OF_CONTRACT
+}
+
+model ExitCase {
+  id                String    @id @default(cuid())
+  userId            String
+  user              User      @relation("ExitStaff", fields: [userId], references: [id])
+  type              ExitType
+  noticeDate        DateTime  @db.Date
+  lastWorkingDay    DateTime  @db.Date
+  reason            String?
+  handoverChecklist Json // [{item, done, by}] — includes company device return
+  finalPayEnc       String? // encrypted final-pay computation
+  accessRevokedAt   DateTime? // sessions + grants revoked, status → EXITED
+  status            String    @default("open") // open | settled | closed
+  handledById       String
+  handledBy         User      @relation("ExitHandler", fields: [handledById], references: [id])
+  createdAt         DateTime  @default(now())
+}

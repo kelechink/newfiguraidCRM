@@ -1,0 +1,13 @@
+{
+  "name": "figuraid-os",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "db:validate": "prisma validate",
+    "db:format": "prisma format"
+  },
+  "devDependencies": {
+    "dotenv": "^16.6.1",
+    "prisma": "6.19.3"
+  }
+}

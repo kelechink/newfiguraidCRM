@@ -1,0 +1,84 @@
+// ─── Privacy & data protection (NDPA 2023) ────────────────────────────────────
+
+enum PolicyKind {
+  STAFF_PRIVACY
+  PUBLIC_PRIVACY
+  WEBCHAT_NOTICE
+  WHATSAPP_NOTICE
+  FORM_NOTICE
+  ACCEPTABLE_USE
+}
+
+model PolicyDocument {
+  id               String             @id @default(cuid())
+  kind             PolicyKind
+  version          String // "2026-10-22.1"
+  title            String
+  body             String // markdown, rendered sanitised
+  publishedAt      DateTime?
+  lawyerReviewedAt DateTime?
+  createdAt        DateTime           @default(now())
+  acceptances      PolicyAcceptance[]
+
+  @@unique([kind, version])
+}
+
+/// Staff must accept the current STAFF_PRIVACY version before first use.
+model PolicyAcceptance {
+  id         String         @id @default(cuid())
+  policyId   String
+  policy     PolicyDocument @relation(fields: [policyId], references: [id])
+  userId     String
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  acceptedAt DateTime       @default(now())
+  ip         String?
+  userAgent  String?
+
+  @@unique([policyId, userId])
+}
+
+enum DsrType {
+  ACCESS
+  CORRECTION
+  DELETION
+  OBJECTION
+  PORTABILITY
+  RESTRICTION
+}
+
+enum DsrStatus {
+  RECEIVED
+  VERIFYING_IDENTITY
+  IN_PROGRESS
+  COMPLETED
+  REJECTED
+}
+
+model DataSubjectRequest {
+  id                 String    @id @default(cuid())
+  type               DsrType
+  status             DsrStatus @default(RECEIVED)
+  requesterName      String
+  requesterEmail     String?
+  requesterPhone     String?
+  contactId          String?
+  contact            Contact?  @relation(fields: [contactId], references: [id])
+  details            String?
+  receivedAt         DateTime  @default(now())
+  dueAt              DateTime // received + statutory window (configurable; default 30 days)
+  assigneeId         String?
+  assignee           User?     @relation(fields: [assigneeId], references: [id])
+  identityVerifiedAt DateTime?
+  resolution         String?
+  completedAt        DateTime?
+}
+
+/// Enforced by a nightly job: e.g. leads inactive 24 months → anonymise; ex-staff → archive then delete.
+model RetentionRule {
+  id        String    @id @default(cuid())
+  entity    String    @unique // contact_lead | exited_staff | ai_interaction | webhook_event | login_attempt
+  afterDays Int
+  action    String // archive | anonymise | delete
+  isActive  Boolean   @default(true)
+  lastRunAt DateTime?
+}

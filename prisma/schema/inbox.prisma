@@ -1,0 +1,271 @@
+// ─── Module B: Unified inbox · Module K: AI agent, routing, SLA ────────────────
+
+enum ChannelType {
+  WHATSAPP
+  INSTAGRAM
+  FACEBOOK
+  EMAIL
+  WEBCHAT
+  LINKEDIN
+  SMS
+}
+
+/// One row per inbox: e.g. "WhatsApp · FigureWeb", "WhatsApp · Academy", "hello@figuraid.com".
+model InboxChannel {
+  id            String                 @id @default(cuid())
+  type          ChannelType
+  name          String
+  unitId        String?
+  unit          BusinessUnit?          @relation(fields: [unitId], references: [id])
+  connectionId  String?
+  connection    IntegrationConnection? @relation(fields: [connectionId], references: [id])
+  address       String? // phone number, mailbox, site domain
+  aiEnabled     Boolean                @default(true)
+  isActive      Boolean                @default(true)
+  createdAt     DateTime               @default(now())
+  conversations Conversation[]
+  templates     WhatsAppTemplate[]
+}
+
+enum ConversationStatus {
+  OPEN
+  PENDING
+  RESOLVED
+}
+
+enum RequestType {
+  SALES_ENQUIRY
+  SUPPORT
+  BILLING
+  TELECOM_RATE_REQUEST
+  COMPLAINT
+  ADMISSIONS
+  RENEWAL
+  OTHER
+  UNCLASSIFIED
+}
+
+model Conversation {
+  id                String                   @id @default(cuid())
+  channelId         String
+  channel           InboxChannel             @relation(fields: [channelId], references: [id])
+  externalThreadId  String? // WA phone, IG thread, email thread id, webchat visitor id
+  contactId         String
+  contact           Contact                  @relation(fields: [contactId], references: [id])
+  unitId            String?
+  unit              BusinessUnit?            @relation(fields: [unitId], references: [id])
+  assigneeId        String?
+  assignee          User?                    @relation("ConversationAssignee", fields: [assigneeId], references: [id])
+  status            ConversationStatus       @default(OPEN)
+  isTriage          Boolean                  @default(false) // unclassified → Ops Manager triage queue
+  // AI classification
+  requestType       RequestType              @default(UNCLASSIFIED)
+  urgency           Priority?
+  language          String?
+  aiSummary         String?
+  aiHandoffReason   String? // unsure | human_requested | complaint | approval_required
+  // SLA
+  lastInboundAt     DateTime?
+  lastOutboundAt    DateTime?
+  firstResponseAt   DateTime?
+  responseDueAt     DateTime? // set on assignment / new inbound
+  escalationLevel   Int                      @default(0) // 0 none, 1 reminder, 2 reassigned+unit mgr, 3 ops mgr
+  slaBreachCount    Int                      @default(0)
+  waWindowExpiresAt DateTime? // WhatsApp 24h customer-service window
+  resolutionNote    String? // required to resolve without a staff reply
+  resolvedAt        DateTime?
+  resolvedById      String?
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  messages          Message[]
+  notes             ConversationNote[]
+  assignments       ConversationAssignment[]
+  tasks             Task[]
+  tickets           Ticket[]
+  aiInteractions    AiInteraction[]
+  aiQueue           AiQueueItem[]
+
+  @@unique([channelId, externalThreadId])
+  @@index([assigneeId, status])
+  @@index([status, responseDueAt])
+  @@index([unitId, status])
+}
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum SenderType {
+  CONTACT
+  STAFF
+  AI
+  SYSTEM
+}
+
+model Message {
+  id             String            @id @default(cuid())
+  conversationId String
+  conversation   Conversation      @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  direction      MessageDirection
+  senderType     SenderType
+  authorId       String?
+  author         User?             @relation(fields: [authorId], references: [id])
+  body           String // stored as plain text; rendered escaped, never as raw HTML (Security #5)
+  attachments    Json? // [{fileId, mime, name}]
+  externalId     String? // provider message id (dedupe)
+  templateId     String?
+  template       WhatsAppTemplate? @relation(fields: [templateId], references: [id])
+  deliveryStatus String? // sent | delivered | read | failed
+  sentAt         DateTime          @default(now())
+
+  @@unique([conversationId, externalId])
+  @@index([conversationId, sentAt])
+}
+
+model ConversationNote {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  authorId       String
+  author         User         @relation(fields: [authorId], references: [id])
+  body           String
+  mentions       String[] // user ids
+  createdAt      DateTime     @default(now())
+}
+
+/// Assignment history — drives response timers, reassignment and escalation.
+model ConversationAssignment {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation("AssignmentUser", fields: [userId], references: [id])
+  assignedById   String?
+  assignedBy     User?        @relation("AssignmentActor", fields: [assignedById], references: [id])
+  method         String // manual | round_robin | least_load | ai_routing | escalation
+  assignedAt     DateTime     @default(now())
+  pickedUpAt     DateTime?
+  endedAt        DateTime?
+}
+
+model SavedReply {
+  id          String   @id @default(cuid())
+  unitId      String?
+  title       String
+  shortcut    String? // "/hosting-prices"
+  body        String
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+enum WaTemplateCategory {
+  MARKETING
+  UTILITY
+  AUTHENTICATION
+}
+
+model WhatsAppTemplate {
+  id        String             @id @default(cuid())
+  channelId String
+  channel   InboxChannel       @relation(fields: [channelId], references: [id])
+  name      String
+  language  String             @default("en")
+  category  WaTemplateCategory
+  body      String
+  variables Int                @default(0)
+  status    String             @default("pending") // Meta approval status
+  messages  Message[]
+
+  @@unique([channelId, name, language])
+}
+
+enum RoutingStrategy {
+  ROUND_ROBIN
+  LEAST_LOAD
+}
+
+/// Admin-editable routing: (unit, requestType) → pool of staff. AI never routes finance/payroll/contracts.
+model RoutingRule {
+  id              String              @id @default(cuid())
+  unitId          String?
+  unit            BusinessUnit?       @relation(fields: [unitId], references: [id])
+  requestType     RequestType
+  strategy        RoutingStrategy     @default(ROUND_ROBIN)
+  slaMinutes      Int                 @default(15)
+  reminderMinutes Int                 @default(10)
+  escalateToId    String? // unit manager
+  escalateTo      User?               @relation("RoutingEscalation", fields: [escalateToId], references: [id])
+  lastAssignedIdx Int                 @default(0) // round-robin cursor
+  priority        Int                 @default(0)
+  isActive        Boolean             @default(true)
+  members         RoutingRuleMember[]
+
+  @@unique([unitId, requestType])
+}
+
+model RoutingRuleMember {
+  ruleId String
+  userId String
+  rule   RoutingRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([ruleId, userId])
+}
+
+/// Public knowledge only — the ONLY internal data the AI agent may read. Also powers the KB (phase 2).
+model KnowledgeArticle {
+  id        String        @id @default(cuid())
+  unitId    String?
+  unit      BusinessUnit? @relation(fields: [unitId], references: [id])
+  title     String
+  body      String
+  isPublic  Boolean       @default(true)
+  aiUsable  Boolean       @default(true)
+  authorId  String?
+  author    User?         @relation(fields: [authorId], references: [id])
+  updatedAt DateTime      @updatedAt
+  createdAt DateTime      @default(now())
+  tickets   Ticket[]
+}
+
+/// Log of every model call (Security #7). Prompt stored post-redaction (emails/phones masked).
+model AiInteraction {
+  id             String        @id @default(cuid())
+  conversationId String?
+  conversation   Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  purpose        String // classify | first_reply | summary | qualify | email_triage
+  provider       String // gemini | groq
+  model          String
+  promptRedacted String
+  response       String?
+  tokensIn       Int?
+  tokensOut      Int?
+  latencyMs      Int?
+  status         String // ok | rate_limited | error | blocked
+  createdAt      DateTime      @default(now())
+
+  @@index([createdAt])
+}
+
+/// When the free-tier quota is hit the message is queued and staff alerted — no customer dropped.
+model AiQueueItem {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  reason         String
+  attempts       Int          @default(0)
+  runAfter       DateTime     @default(now())
+  doneAt         DateTime?
+  createdAt      DateTime     @default(now())
+}
+
+model AiQuotaUsage {
+  id       String   @id @default(cuid())
+  provider String
+  day      DateTime @db.Date // Pacific-time day for Gemini quota reset
+  requests Int      @default(0)
+
+  @@unique([provider, day])
+}

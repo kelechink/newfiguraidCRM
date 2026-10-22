@@ -1,0 +1,186 @@
+// ─── Module G: Staff OS — tasks, targets, SOPs, daily reports ─────────────────
+
+model Project {
+  id            String         @id @default(cuid())
+  unitId        String
+  unit          BusinessUnit   @relation(fields: [unitId], references: [id])
+  name          String
+  ownerId       String?
+  owner         User?          @relation(fields: [ownerId], references: [id])
+  status        String         @default("active")
+  createdAt     DateTime       @default(now())
+  tasks         Task[]
+  focusSessions FocusSession[]
+  chatChannels  ChatChannel[]
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  BLOCKED
+  DONE
+  CANCELLED
+}
+
+enum TaskSource {
+  MANUAL
+  TARGET // auto-derived from weekly target
+  CHAT // created from an internal message
+  CONVERSATION // created from inbox / AI routing
+  TICKET
+  SOP_RECURRING
+  SYSTEM // reminders, renewals
+}
+
+model Task {
+  id             String              @id @default(cuid())
+  unitId         String
+  unit           BusinessUnit        @relation(fields: [unitId], references: [id])
+  projectId      String?
+  project        Project?            @relation(fields: [projectId], references: [id])
+  title          String
+  description    String?
+  status         TaskStatus          @default(TODO)
+  priority       Priority            @default(MEDIUM)
+  dueAt          DateTime?
+  assigneeId     String?
+  assignee       User?               @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  createdById    String
+  createdBy      User                @relation("TaskCreator", fields: [createdById], references: [id])
+  source         TaskSource          @default(MANUAL)
+  targetId       String?
+  target         WeeklyTarget?       @relation(fields: [targetId], references: [id])
+  sopId          String?
+  sop            Sop?                @relation(fields: [sopId], references: [id])
+  conversationId String?
+  conversation   Conversation?       @relation(fields: [conversationId], references: [id])
+  chatMessageId  String?             @unique
+  chatMessage    ChatMessage?        @relation("MessageTask", fields: [chatMessageId], references: [id])
+  ticketId       String?
+  ticket         Ticket?             @relation(fields: [ticketId], references: [id])
+  recurrenceRule String? // RRULE for recurring SOP tasks
+  startedAt      DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  comments       TaskComment[]
+  checklist      TaskChecklistItem[]
+  attachments    TaskAttachment[]
+
+  @@index([assigneeId, status, dueAt])
+  @@index([unitId, status])
+}
+
+model TaskComment {
+  id        String   @id @default(cuid())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  body      String
+  mentions  String[]
+  createdAt DateTime @default(now())
+}
+
+model TaskChecklistItem {
+  id        String    @id @default(cuid())
+  taskId    String
+  task      Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  position  Int
+  label     String
+  doneAt    DateTime?
+  sopStepId String?
+}
+
+model TaskAttachment {
+  taskId String
+  fileId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, fileId])
+}
+
+model Sop {
+  id        String        @id @default(cuid())
+  unitId    String?
+  unit      BusinessUnit? @relation(fields: [unitId], references: [id])
+  title     String
+  summary   String?
+  ownerId   String?
+  owner     User?         @relation(fields: [ownerId], references: [id])
+  version   Int           @default(1)
+  isActive  Boolean       @default(true)
+  updatedAt DateTime      @updatedAt
+  steps     SopStep[]
+  tasks     Task[]
+}
+
+model SopStep {
+  id       String  @id @default(cuid())
+  sopId    String
+  sop      Sop     @relation(fields: [sopId], references: [id], onDelete: Cascade)
+  position Int
+  title    String
+  detail   String?
+
+  @@unique([sopId, position])
+}
+
+enum TargetMetric {
+  LEADS_CONTACTED
+  DEALS_CLOSED
+  REVENUE
+  MINUTES_SOLD
+  TICKETS_RESOLVED
+  CONVERSATIONS_HANDLED
+  STUDENTS_ENROLLED
+  CUSTOM
+}
+
+model WeeklyTarget {
+  id          String       @id @default(cuid())
+  userId      String
+  user        User         @relation("TargetOwner", fields: [userId], references: [id])
+  unitId      String
+  weekStart   DateTime     @db.Date // Monday
+  metric      TargetMetric
+  label       String? // for CUSTOM
+  targetValue Decimal      @db.Decimal(18, 2)
+  achieved    Decimal      @default(0) @db.Decimal(18, 2) // recomputed from source data nightly + on events
+  bonusAmount Decimal?     @db.Decimal(18, 2) // paid via payroll if achieved ≥ target
+  setById     String
+  setBy       User         @relation("TargetSetter", fields: [setById], references: [id])
+  createdAt   DateTime     @default(now())
+  tasks       Task[]
+
+  @@unique([userId, weekStart, metric, label])
+}
+
+model DailyReport {
+  id           String       @id @default(cuid())
+  userId       String
+  user         User         @relation(fields: [userId], references: [id])
+  unitId       String
+  unit         BusinessUnit @relation(fields: [unitId], references: [id])
+  date         DateTime     @db.Date
+  accomplished String
+  blockers     String?
+  tomorrow     String?
+  submittedAt  DateTime     @default(now())
+
+  @@unique([userId, date])
+}
+
+/// "Which unit/project am I working on" — work is logged against the active focus.
+model FocusSession {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  unitId    String
+  projectId String?
+  project   Project?  @relation(fields: [projectId], references: [id])
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+
+  @@index([userId, startedAt])
+}
