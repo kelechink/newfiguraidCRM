@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { PublicForm } from "@/components/public/public-form";
 import { publicForm } from "@/server/modules/crm/forms-service";
@@ -19,7 +19,7 @@ export default async function FormPage({ params, searchParams }: { params: Promi
       <PublicForm
         form={form}
         utm={{ source: sp.utm_source, medium: sp.utm_medium, campaign: sp.utm_campaign, content: sp.utm_content }}
-        refCode={sp.ref ?? null}
+        refCode={sp.ref ?? (await cookies()).get("fos_ref")?.value ?? null}
         turnstileSiteKey={process.env.TURNSTILE_SITE_KEY ?? null}
         nonce={nonce}
       />

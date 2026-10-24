@@ -115,7 +115,7 @@ export const DEFAULT_ROLES: DefaultRole[] = [
       ["telecom.billing", ALL, "ALL"],
       ["telecom.prepaid", VCE, "ALL"],
       ["telecom.disputes", VCE, "ALL"],
-      ["referrals.payouts", V, "ALL"],
+      ["referrals.payouts", VA, "ALL"], // approves commission payouts into expenses
       ["hr.salaries", V, "ALL"],
       ["hr.bank_details", V, "ALL"],
       ["payroll", ["VIEW", "CREATE", "EDIT", "APPROVE", "EXPORT"], "ALL"],

@@ -6,7 +6,7 @@ type Tx = Prisma.TransactionClient;
 
 export interface AuditEntry {
   actorId: string | null;
-  actorType?: "user" | "system" | "webhook" | "ai";
+  actorType?: "user" | "system" | "webhook" | "ai" | "external";
   action: string; // "task.create", "sop.generate", "rate.create", "export.csv"
   entityType?: string;
   entityId?: string;

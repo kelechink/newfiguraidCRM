@@ -3,6 +3,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { ForbiddenError, ReauthRequiredError, RuleError } from "@/server/authz/errors";
 import { loadCtx } from "@/server/authz/context";
 import { db } from "@/server/db";
+import { currentRates } from "@/server/fx/rates";
 import { verifyPaystackSignature } from "@/server/integrations/paystack";
 import { convertQuote, getInvoice, listInvoices, recordInvoicePayment, saveInvoice, voidInvoice } from "@/server/modules/finance/invoices-service";
 import { createExpense, decideExpense, listExpenses, recordProviderPayment } from "@/server/modules/finance/money-service";
@@ -175,7 +176,7 @@ describe("subscriptions & procurement", () => {
     const rows = items.filter((i) => i.name === name);
     expect(rows).toHaveLength(2);
     expect(rows.every((r) => r.flags.includes("duplicate"))).toBe(true);
-    const usd = Number((await db.setting.findUnique({ where: { key: "finance.usd_ngn_rate" } }))?.value ?? 1550);
+    const usd = (await currentRates()).USD;
     expect(rows.find((r) => r.recurrence === "ANNUAL")!.monthlyNgn).toBeCloseTo(10 * usd, 2);
   });
 

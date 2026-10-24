@@ -223,3 +223,8 @@ export async function accountOptions(ctx: Ctx, side?: "VENDOR" | "CUSTOMER") {
   });
   return rows.map((a) => ({ id: a.id, label: `${a.carrier.name} · ${a.side === "VENDOR" ? "vendor" : "customer"}`, carrier: a.carrier.name, side: a.side, currency: a.currency, paymentMode: a.paymentMode }));
 }
+
+export async function carrierOptions(ctx: Ctx) {
+  const rows = await db.carrier.findMany({ where: { AND: [await carrierWhere(ctx, "telecom.carriers", "VIEW"), { isActive: true }] }, select: { id: true, name: true }, orderBy: { name: "asc" } });
+  return rows;
+}

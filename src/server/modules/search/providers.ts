@@ -63,3 +63,20 @@ registerSearch(async (ctx, q) => {
   const rows = await db.carrier.findMany({ where: { AND: [await carrierWhere(ctx, "telecom.carriers", "VIEW"), { OR: [{ name: contains(q) }, { legalName: contains(q) }] }] }, take: 5, orderBy: { name: "asc" } });
   return rows.map((c) => ({ id: c.id, kind: "Carrier", title: c.name, subtitle: c.type.toLowerCase(), href: `/money/telecom/carriers/${c.id}` }));
 });
+
+// ── Support & tenders ──
+registerSearch(async (ctx, q) => {
+  const scope = scopeOf(ctx, "support.tickets", "VIEW");
+  if (!scope) return [];
+  const where = scope === "ALL" ? {} : scope === "UNIT" ? { unitId: { in: ctx.unitIds } } : { assigneeId: ctx.userId };
+  const rows = await db.ticket.findMany({ where: { AND: [where, { OR: [{ number: contains(q) }, { subject: contains(q) }] }] }, take: 5, orderBy: { updatedAt: "desc" } });
+  return rows.map((t) => ({ id: t.id, kind: "Ticket", title: `${t.number} · ${t.subject}`, subtitle: t.status.replace("_", " ").toLowerCase(), href: `/customers/tickets/${t.id}` }));
+});
+
+registerSearch(async (ctx, q) => {
+  const scope = scopeOf(ctx, "tenders", "VIEW");
+  if (!scope) return [];
+  const where = scope === "ALL" ? {} : scope === "UNIT" ? { unitId: { in: ctx.unitIds } } : { ownerId: ctx.userId };
+  const rows = await db.tender.findMany({ where: { AND: [where, { OR: [{ title: contains(q) }, { agency: contains(q) }, { reference: contains(q) }] }] }, take: 5, orderBy: { deadline: "asc" } });
+  return rows.map((t) => ({ id: t.id, kind: "Tender", title: t.title, subtitle: t.agency, href: `/customers/tenders?t=${t.id}` }));
+});
