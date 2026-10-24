@@ -12,6 +12,7 @@ const TONE: Record<string, Tone> = {
   OVERDUE: "danger", REJECTED: "danger", FAILED: "danger", LOST: "danger", REVOKED: "danger", DISPUTED: "danger", VOID: "neutral",
   CANCELLED: "neutral", EXPIRED: "danger", LATE: "warning", ABSENT: "danger", ON_LEAVE: "neutral", HOLIDAY: "neutral", BLOCKED: "danger",
   TRIAL: "accent", PAUSED: "neutral", SUSPENDED: "danger", EXITED: "neutral", INVITED: "warning", ONBOARDING: "warning",
+  STAFF_SIGNED: "accent", GENERATED: "neutral", RATING: "accent",
   PENDING_RECONCILIATION: "warning", REFUNDED: "neutral", RESOLVED_IN_THEIR_FAVOUR: "warning", URGENT: "danger", HIGH: "warning",
 };
 

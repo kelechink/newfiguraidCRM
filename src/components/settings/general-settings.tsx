@@ -21,6 +21,9 @@ const RULES: { key: string; label: string; hint: string; suffix?: string }[] = [
   { key: "finance.vat_rate_pct", label: "VAT rate", hint: "Default on new invoices.", suffix: "%" },
   { key: "finance.usd_ngn_rate", label: "Default USD → NGN rate", hint: "Pre-filled on USD transactions; each transaction keeps its own rate.", suffix: "₦" },
   { key: "inbox.sla_minutes", label: "Inbox response SLA", hint: "Unanswered conversations escalate after this.", suffix: "min" },
+  { key: "payroll.pension_pct", label: "Employee pension", hint: "Of basic + housing + transport. Pension Reform Act minimum is 8%.", suffix: "%" },
+  { key: "payroll.nhf_pct", label: "National Housing Fund", hint: "Of basic pay. Set to 2.5 if you remit NHF, 0 if not.", suffix: "%" },
+  { key: "payroll.paye_enabled", label: "Deduct PAYE", hint: "1 to deduct PAYE on payslips (Nigeria Tax Act 2025 bands), 0 to leave it off.", suffix: "on/off" },
   { key: "privacy.dsr_days", label: "Data request deadline", hint: "Days to answer access/deletion requests (confirm with your DPO).", suffix: "days" },
 ];
 

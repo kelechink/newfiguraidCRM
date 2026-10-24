@@ -15,6 +15,9 @@ export const SETTING_DEFAULTS = {
   "inbox.sla_minutes": 15,
   "privacy.dsr_days": 30,
   "dpo.contact": "privacy@figuraid.com",
+  "payroll.paye_enabled": 1, // 1 = deduct PAYE on payslips, 0 = off
+  "payroll.pension_pct": 8, // employee contribution, Pension Reform Act 2014
+  "payroll.nhf_pct": 0, // National Housing Fund (2.5% where it applies)
 } as const;
 export type SettingKey = keyof typeof SETTING_DEFAULTS;
 

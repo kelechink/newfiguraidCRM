@@ -56,6 +56,7 @@ const NAV: { label: string; items: Def[] }[] = [
     label: "Team",
     items: [
       { href: "/team/staff", label: "Staff", icon: "staff", any: [["hr.staff", "VIEW"]], keywords: "people onboarding exit hr" },
+      { href: "/team/contracts", label: "Contracts & policies", icon: "documents", any: [["hr.contracts", "VIEW"]], keywords: "templates onboarding pack lateness policy" },
       { href: "/team/payroll", label: "Payroll", icon: "payroll", any: [["payroll", "VIEW"]], keywords: "salary payslips deductions" },
       { href: "/team/documents", label: "Documents", icon: "documents", any: [["documents", "VIEW"]], keywords: "vault contracts nda cac signatures" },
       { href: "/me", label: "My pay & attendance", icon: "me", any: [["attendance", "VIEW"]], keywords: "payslip deductions late" },
