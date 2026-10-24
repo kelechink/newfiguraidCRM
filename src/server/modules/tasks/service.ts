@@ -8,6 +8,7 @@ import { NotFoundError, RuleError } from "@/server/authz/errors";
 import { audit } from "@/server/audit/audit";
 import { db } from "@/server/db";
 import { notify } from "@/server/notify/notify";
+import { publish } from "@/server/realtime/bus";
 import {
   BoardFilterInput,
   CreateTaskInput,
@@ -141,7 +142,16 @@ export async function topOfColumnRank(client: Db, status: TaskStatus): Promise<s
 
 // ── mutations ────────────────────────────────────────────────────────────────
 
-export async function createTask(ctx: Ctx, rawInput: unknown): Promise<{ id: string }> {
+/** Where a task was created from — set by server code, never by the client. */
+export interface TaskLink {
+  source?: "MANUAL" | "CHAT" | "CONVERSATION" | "TICKET" | "TARGET";
+  chatMessageId?: string;
+  conversationId?: string;
+  ticketId?: string;
+  targetId?: string;
+}
+
+export async function createTask(ctx: Ctx, rawInput: unknown, link: TaskLink = {}): Promise<{ id: string }> {
   const input = CreateTaskInput.parse(rawInput);
   const scope = requireScope(ctx, "tasks", "CREATE");
   // Assigning work is a lead's job: an OWN-scoped grant can't create tasks.
@@ -174,7 +184,11 @@ export async function createTask(ctx: Ctx, rawInput: unknown): Promise<{ id: str
         priority: input.priority,
         dueAt: input.dueAt ?? null,
         origin,
-        source: "MANUAL",
+        source: link.source ?? "MANUAL",
+        chatMessageId: link.chatMessageId,
+        conversationId: link.conversationId,
+        ticketId: link.ticketId,
+        targetId: link.targetId,
         boardRank: await topOfColumnRank(tx, "TODO"),
       },
     });
@@ -220,7 +234,7 @@ export async function moveTask(ctx: Ctx, rawInput: unknown): Promise<{ rank: str
   else rank = rankBetween(await edgeRank(db, status, "last"), null);
 
   const now = new Date();
-  await db.task.update({
+  const updated = await db.task.update({
     where: { id: task.id },
     data: {
       status,
@@ -229,6 +243,7 @@ export async function moveTask(ctx: Ctx, rawInput: unknown): Promise<{ rank: str
       completedAt: status === "DONE" ? (task.status === "DONE" ? undefined : now) : null,
     },
   });
+  if (status !== task.status) await announceTaskProgress(ctx, updated);
   return { rank };
 }
 
@@ -269,4 +284,23 @@ export async function getTaskDetail(ctx: Ctx, taskId: string): Promise<TaskDetai
     checklist: task.checklist.map((c) => ({ id: c.id, label: c.label, done: !!c.doneAt })),
     canEdit,
   };
+}
+
+const STATUS_WORDS: Record<string, string> = { TODO: "moved back to To do", IN_PROGRESS: "started", BLOCKED: "marked blocked", DONE: "completed" };
+
+/** Tasks created from a chat message report progress back into that thread (Module R). */
+async function announceTaskProgress(ctx: Ctx, task: { id: string; title: string; status: string; chatMessageId: string | null; createdById: string }) {
+  if (task.chatMessageId) {
+    const parent = await db.chatMessage.findUnique({ where: { id: task.chatMessageId }, select: { id: true, channelId: true } });
+    if (parent) {
+      const msg = await db.chatMessage.create({
+        data: { channelId: parent.channelId, authorId: ctx.userId, parentId: parent.id, kind: "system", body: `${ctx.name} ${STATUS_WORDS[task.status] ?? "updated"} the task “${task.title}”.` },
+      });
+      const members = await db.chatMember.findMany({ where: { channelId: parent.channelId }, select: { userId: true } });
+      publish(members.map((m) => m.userId), { type: "chat", channelId: parent.channelId, messageId: msg.id });
+    }
+  }
+  if (task.status === "DONE" && task.createdById !== ctx.userId) {
+    await notify({ userIds: [task.createdById], type: "task.done", title: `${ctx.name} completed “${task.title}”`, link: `/work/tasks?task=${task.id}` });
+  }
 }
