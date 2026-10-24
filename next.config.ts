@@ -13,6 +13,8 @@ const config: NextConfig = {
   poweredByHeader: false,
   output: "standalone",
   serverExternalPackages: ["@node-rs/argon2"],
+  // selfies, receipts and CDR files arrive through server actions; each purpose has its own tighter cap
+  experimental: { serverActions: { bodySizeLimit: "26mb" } },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
