@@ -48,6 +48,7 @@ export interface DayFact {
   status: "PRESENT" | "LATE" | "ABSENT" | "ON_LEAVE" | "HOLIDAY" | "WEEKEND" | "PENDING";
   minutesLate: number;
   minutesEarly?: number;
+  missingClockOut?: boolean;
   excused: boolean; // an approved excuse covers this day
 }
 
@@ -82,7 +83,7 @@ export function attendanceDeductions(input: { rule: PolicyRule; monthlyGross: nu
       }
     } else if (d.status === "ABSENT") {
       const amount = absenceCharge(rule, monthlyGross, workingDaysInMonth);
-      if (amount > 0) raw.push({ date: d.date, dayId: d.dayId, type: "ABSENCE", amount, reason: `Absent without approved leave or excuse on ${dayLabel(d.date)}`, status: "active" });
+      if (amount > 0) raw.push({ date: d.date, dayId: d.dayId, type: "ABSENCE", amount, reason: d.missingClockOut ? `No-show on ${dayLabel(d.date)}: clocked in but never clocked out at the office` : `Absent without approved leave or excuse on ${dayLabel(d.date)}`, status: "active" });
     }
   }
   const cap = monthlyCap(rule, monthlyGross);

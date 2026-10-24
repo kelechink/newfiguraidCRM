@@ -174,7 +174,49 @@ export async function listRetention(ctx: Ctx) {
   return db.retentionRule.findMany({ orderBy: { entity: "asc" } });
 }
 
-/** Nightly: apply retention rules. Leads never converted are anonymised after the window. */
+/** Contacts that count as un-followed-up leads: still a lead, untouched since `before`, and not tied to money, support, study or legal records. */
+const staleLeadWhere = (before: Date) => ({
+  deletedAt: null,
+  lifecycle: "LEAD" as const,
+  OR: [{ lastActivityAt: { lt: before } }, { lastActivityAt: null, createdAt: { lt: before } }],
+  deals: { none: { status: "WON" as const } },
+  invoices: { none: {} },
+  payments: { none: {} },
+  tickets: { none: {} },
+  studentEnrollments: { none: {} },
+  referralsMade: { none: {} },
+  referrer: null,
+  resaleItems: { none: {} },
+  domains: { none: {} },
+  documents: { none: {} },
+  dsrs: { none: {} },
+});
+
+/** Permanently delete a lead and everything personal attached to it. Falls back to anonymising if a link blocks deletion. */
+export async function deleteLead(contactId: string): Promise<"deleted" | "anonymised"> {
+  try {
+    await db.$transaction(async (tx) => {
+      const deals = await tx.deal.findMany({ where: { contactId }, select: { id: true } });
+      if (deals.length) {
+        await tx.referral.updateMany({ where: { dealId: { in: deals.map((d) => d.id) } }, data: { dealId: null } });
+        await tx.activity.deleteMany({ where: { dealId: { in: deals.map((d) => d.id) } } });
+        await tx.deal.deleteMany({ where: { id: { in: deals.map((d) => d.id) } } });
+      }
+      await tx.formSubmission.deleteMany({ where: { contactId } });
+      await tx.emailMessage.updateMany({ where: { contactId }, data: { contactId: null } });
+      await tx.conversation.deleteMany({ where: { contactId } });
+      await tx.contact.updateMany({ where: { mergedIntoId: contactId }, data: { mergedIntoId: null } });
+      await tx.contact.delete({ where: { id: contactId } }); // activities, consents, tags, sequence enrolments cascade
+    });
+    return "deleted";
+  } catch (e) {
+    console.warn("[retention] could not delete lead, anonymising instead", contactId, e instanceof Error ? e.message : e);
+    await anonymiseContact(contactId);
+    return "anonymised";
+  }
+}
+
+/** Nightly: apply retention rules, and warn owners a week before their leads are removed. */
 export async function runRetention(now = new Date()): Promise<Record<string, number>> {
   const rules = await db.retentionRule.findMany({ where: { isActive: true } });
   const out: Record<string, number> = {};
@@ -182,9 +224,17 @@ export async function runRetention(now = new Date()): Promise<Record<string, num
     const before = new Date(now.getTime() - rule.afterDays * 86_400_000);
     let n = 0;
     if (rule.entity === "contact_lead") {
-      const stale = await db.contact.findMany({ where: { deletedAt: null, lifecycle: { in: ["LEAD", "ARCHIVED"] }, OR: [{ lastActivityAt: { lt: before } }, { lastActivityAt: null, createdAt: { lt: before } }], deals: { none: { status: "WON" } }, invoices: { none: {} } }, select: { id: true }, take: 500 });
-      for (const c of stale) await anonymiseContact(c.id);
-      n = stale.length;
+      const stale = await db.contact.findMany({ where: staleLeadWhere(before), select: { id: true }, take: 1000 });
+      for (const c of stale) {
+        const r = rule.action === "delete" ? await deleteLead(c.id) : (await anonymiseContact(c.id), "anonymised");
+        if (r) n++;
+      }
+      // warning: leads that cross the line in the next 7 days
+      const soon = await db.contact.groupBy({ by: ["ownerId"], where: { ...staleLeadWhere(new Date(before.getTime() + 7 * 86_400_000)), NOT: staleLeadWhere(new Date(before.getTime() + 6 * 86_400_000)) }, _count: true });
+      for (const g of soon) {
+        if (!g.ownerId) continue;
+        await notify({ userIds: [g.ownerId], type: "retention.leads", title: `${g._count} lead${g._count === 1 ? "" : "s"} will be deleted in 7 days`, body: `Not followed up for ${rule.afterDays - 7} days. Log a call, message or note to keep them.`, link: "/customers/contacts?ownerId=me&lifecycle=LEAD" });
+      }
     } else if (rule.entity === "webhook_event") {
       n = (await db.webhookEvent.deleteMany({ where: { receivedAt: { lt: before } } }).catch(() => ({ count: 0 }))).count;
     } else if (rule.entity === "login_attempt") {
@@ -193,7 +243,7 @@ export async function runRetention(now = new Date()): Promise<Record<string, num
     await db.retentionRule.update({ where: { id: rule.id }, data: { lastRunAt: now } });
     out[rule.entity] = n;
   }
-  if (Object.values(out).some((n) => n > 0)) await db.$transaction((tx) => audit(tx, { actorId: null, actorType: "system", action: "retention.run", entityType: "RetentionRule", entityId: "nightly", after: out }));
+  if (Object.values(out).some((n) => n > 0)) await db.$transaction((tx) => audit(tx, { actorId: null, actorType: "system", action: "retention.run", entityType: "RetentionRule", entityId: "nightly", after: out })); // counts only, never who
   return out;
 }
 

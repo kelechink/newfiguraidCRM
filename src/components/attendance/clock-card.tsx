@@ -141,7 +141,7 @@ export function ClockCard() {
   const [selfie, setSelfie] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [queued, setQueued] = useState(0);
-  const [result, setResult] = useState<{ needsReview: boolean; flags: { key: string; label: string }[]; type: string; minutesLate: number } | null>(null);
+  const [result, setResult] = useState<{ needsReview: boolean; counts: boolean; flags: { key: string; label: string }[]; type: string; minutesLate: number } | null>(null);
 
   const load = useCallback(async (fingerprint: string) => {
     const res = await clockStateAction(fingerprint);
@@ -306,6 +306,11 @@ export function ClockCard() {
           >
             {result ? (
               <div className="grid gap-3 text-[13px]">
+                {!result.counts && (
+                  <p className="flex items-start gap-2 rounded-md border border-danger/20 bg-danger/5 px-3 py-2 text-danger">
+                    <TriangleAlert className="mt-0.5 size-4 shrink-0" /> You're outside Kano House, so this clock-{flow === "IN" ? "in" : "out"} doesn't count. {flow === "IN" ? "Clock in again when you arrive — until then you're not at work." : "Clock out at the office, or the day becomes a no-show."} If you were at a client site, your manager can approve it.
+                  </p>
+                )}
                 {result.needsReview ? (
                   <>
                     <p className="flex items-start gap-2 text-ink-2">

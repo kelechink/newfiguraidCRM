@@ -69,15 +69,27 @@ describe("computeDay", () => {
     expect(run([{ type: "IN", at: at("09:01") }, { type: "OUT", at: at("17:00") }])).toMatchObject({ status: "LATE", minutesLate: 1 });
   });
 
-  it("signing off before 17:00 is an early departure; no clock-out is flagged, not charged", () => {
+  it("signing off before 17:00 is an early departure; a finished day with no clock-out is a no-show", () => {
     expect(run([{ type: "IN", at: at("08:50") }, { type: "OUT", at: at("16:59") }])).toMatchObject({ status: "PRESENT", minutesEarly: 1, missingClockOut: false });
     expect(run([{ type: "IN", at: at("08:50") }, { type: "OUT", at: at("13:00") }, { type: "IN", at: at("14:00") }, { type: "OUT", at: at("17:00") }]).minutesEarly).toBe(0); // lunch break
-    expect(run([{ type: "IN", at: at("08:50") }])).toMatchObject({ minutesEarly: 0, missingClockOut: true });
-    expect(run([{ type: "IN", at: at("08:50") }], { today: day }).missingClockOut).toBe(false); // still at work
+    expect(run([{ type: "IN", at: at("09:20") }])).toMatchObject({ status: "ABSENT", minutesLate: 0, missingClockOut: true });
+    expect(run([{ type: "IN", at: at("08:50") }], { today: day })).toMatchObject({ status: "PRESENT", missingClockOut: false }); // still at work
+  });
+
+  it("punches that don't count (outside the office) are ignored: first valid clock-in sets lateness", () => {
+    const r = computeDay({ date: day, today: "2026-10-23", schedule: DEFAULT_SCHEDULE, onLeave: false, holiday: false, punches: [
+      { type: "IN", at: at("08:40"), accepted: false }, // from home
+      { type: "IN", at: at("09:35"), accepted: true }, // arrived at Kano House
+      { type: "OUT", at: at("17:10"), accepted: true },
+      { type: "OUT", at: at("17:40"), accepted: false }, // from the bus
+    ] });
+    expect(r).toMatchObject({ status: "LATE", minutesLate: 35, minutesEarly: 0 });
+    const onlyOutside = computeDay({ date: day, today: "2026-10-23", schedule: DEFAULT_SCHEDULE, onLeave: false, holiday: false, punches: [{ type: "IN", at: at("08:40"), accepted: false }, { type: "OUT", at: at("17:00"), accepted: false }] });
+    expect(onlyOutside.status).toBe("ABSENT");
   });
 
   it("after grace is late, counting minutes from resumption time", () => {
-    expect(run([{ type: "IN", at: at("09:23") }])).toMatchObject({ status: "LATE", minutesLate: 23 });
+    expect(run([{ type: "IN", at: at("09:23") }, { type: "OUT", at: at("17:00") }])).toMatchObject({ status: "LATE", minutesLate: 23 });
   });
 
   it("no punches on a past working day is absent; today is still pending", () => {

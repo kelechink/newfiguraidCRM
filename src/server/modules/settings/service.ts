@@ -15,6 +15,7 @@ export const SETTING_DEFAULTS = {
   "inbox.sla_minutes": 15,
   "privacy.dsr_days": 30,
   "dpo.contact": "privacy@figuraid.com",
+  "finance.fx_basis": "parallel", // naira views use the parallel (street/BDC) rate; "official" uses CBN/NFEM
   "payroll.paye_enabled": 1, // 1 = deduct PAYE on payslips, 0 = off
   "payroll.pension_pct": 8, // employee contribution, Pension Reform Act 2014
   "payroll.nhf_pct": 0, // National Housing Fund (2.5% where it applies)
@@ -36,7 +37,9 @@ export async function saveSetting(ctx: Ctx, raw: unknown) {
   requireScope(ctx, "settings", "EDIT");
   const { key, value } = z.object({ key: z.enum(Object.keys(SETTING_DEFAULTS) as [SettingKey, ...SettingKey[]]), value: z.union([z.number(), z.string().max(200)]) }).parse(raw);
   if (typeof SETTING_DEFAULTS[key] === "number" && (typeof value !== "number" || !Number.isFinite(value) || value < 0)) throw new RuleError("Enter a positive number");
-  if (key === "payroll.signoff_limit_ngn" && !(await import("@/server/authz/context")).can(ctx, "roles", "EDIT")) throw new RuleError("Only the Super Admin can change the payroll sign-off limit");
+  if (key === "finance.fx_basis" && value !== "parallel" && value !== "official") throw new RuleError("Choose parallel or official");
+  if (key === "payroll.paye_enabled" && value !== 0 && value !== 1) throw new RuleError("Use 1 (on) or 0 (off)");
+    if (key === "payroll.signoff_limit_ngn" && !(await import("@/server/authz/context")).can(ctx, "roles", "EDIT")) throw new RuleError("Only the Super Admin can change the payroll sign-off limit");
   const before = await db.setting.findUnique({ where: { key } });
   await db.$transaction(async (tx) => {
     await tx.setting.upsert({ where: { key }, update: { value }, create: { key, value } });

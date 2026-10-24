@@ -71,7 +71,7 @@ export async function recomputeDeductions(tx: Tx, userId: string, m: string) {
     rule: toRule(policy),
     monthlyGross: gross,
     workingDaysInMonth: working.length,
-    days: days.map((d) => ({ date: d.date.toISOString().slice(0, 10), dayId: d.id, status: d.status, minutesLate: d.minutesLate, minutesEarly: d.minutesEarly, excused: d.excuses.length > 0 })),
+    days: days.map((d) => ({ date: d.date.toISOString().slice(0, 10), dayId: d.id, status: d.status, minutesLate: d.minutesLate, minutesEarly: d.minutesEarly, missingClockOut: d.missingClockOut, excused: d.excuses.length > 0 })),
   });
   const lines = result.items.filter((i) => !waived.has(`${i.dayId}|${i.type}`));
   if (lines.length) await tx.deduction.createMany({ data: lines.map((l) => ({ userId, dayId: l.dayId ?? null, type: l.type, amount: l.amount, reason: l.reason, status: l.status, periodMonth: m })) });

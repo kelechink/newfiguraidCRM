@@ -47,16 +47,23 @@ async function onApprovedLeave(userId: string, date: string) {
 }
 
 /** Recompute and persist one person's day from their punches, leave, holidays and schedule. */
+export function countsForAttendance(p: { reviewStatus: string; withinGeofence: boolean }, remoteAllowed: boolean): boolean {
+  if (p.reviewStatus === "REJECTED") return false;
+  return p.withinGeofence || remoteAllowed || p.reviewStatus === "APPROVED";
+}
+
 export async function recomputeDay(userId: string, date: string) {
   const day = await db.attendanceDay.upsert({ where: { userId_date: { userId, date: new Date(date) } }, update: {}, create: { userId, date: new Date(date) } });
   if (day.payrollLockedAt) return day;
   const punches = await db.attendancePunch.findMany({ where: { dayId: day.id } });
-  const { schedule } = await profileFor(userId);
+  const { schedule, remoteAllowed } = await profileFor(userId);
   const r = computeDay({
     date,
     today: localDate(new Date()),
     schedule,
-    punches: punches.map((p) => ({ type: p.type, at: p.deviceTime, accepted: p.reviewStatus !== "REJECTED" })),
+    // Company rule: a punch only counts at the office (Kano House) — unless the person is
+    // remote-approved or a manager approved that punch as a genuine exception (client visit).
+    punches: punches.map((p) => ({ type: p.type, at: p.deviceTime, accepted: countsForAttendance(p, remoteAllowed) })),
     onLeave: await onApprovedLeave(userId, date),
     holiday: await isHoliday(date),
   });
@@ -114,6 +121,8 @@ export interface PunchResult {
   distanceM: number | null;
   flags: { key: PunchFlag; label: string }[];
   needsReview: boolean;
+  /** False when the punch was outside the office and won't count unless a manager approves it. */
+  counts: boolean;
   status: string;
   minutesLate: number;
 }
@@ -240,6 +249,7 @@ export async function punch(ctx: Ctx, form: FormData, meta: { ip: string | null;
     distanceM: verdict.distanceM,
     flags: verdict.flags.map((k) => ({ key: k, label: FLAG_LABEL[k] })),
     needsReview: verdict.needsReview,
+    counts: verdict.withinGeofence || prof.remoteAllowed,
     status: updated.status,
     minutesLate: updated.minutesLate,
   };

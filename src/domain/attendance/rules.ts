@@ -118,7 +118,7 @@ export interface DayResult {
   minutesLate: number;
   /** Signed off before scheduled close (last punch of the day is an OUT before close). */
   minutesEarly: number;
-  /** Clocked in but never out on a finished day: flagged for review, not charged. */
+  /** Clocked in but never out on a finished day: a no-show, charged as an absence. */
   missingClockOut: boolean;
   workedMinutes: number;
   overtimeMinutes: number;
@@ -173,6 +173,10 @@ export function computeDay(input: {
   const late = lateBy > schedule.graceMinutes;
   const lastPunch = punches.at(-1)!;
   const signedOff = lastPunch.type === "OUT";
+  // Company rule: you're not expected to miss a clock-out. A finished day without one is a no-show.
+  if (!signedOff && date < input.today) {
+    return { ...base, status: "ABSENT", minutesLate: 0, missingClockOut: true, overtimeMinutes: 0 };
+  }
   const earlyBy = signedOff ? Math.ceil((scheduledEnd!.getTime() - lastPunch.at.getTime()) / 60_000) : 0;
   const over = lastOutAt ? Math.floor((lastOutAt.getTime() - scheduledEnd!.getTime()) / 60_000) : 0;
   return {
@@ -180,7 +184,6 @@ export function computeDay(input: {
     status: late ? "LATE" : "PRESENT",
     minutesLate: late ? lateBy : 0,
     minutesEarly: earlyBy > 0 ? earlyBy : 0,
-    missingClockOut: !signedOff && date < input.today,
     overtimeMinutes: over >= OVERTIME_THRESHOLD_MIN ? over : 0,
   };
 }
