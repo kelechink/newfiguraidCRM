@@ -19,10 +19,13 @@
   --danger: 0 72% 50%;
   --warning: 35 92% 42%;
   --success: 155 62% 33%;
-  --unit-academy: 262 70% 58%;
-  --unit-figureweb: 199 85% 44%;
-  --unit-telecom: 30 92% 48%;
-  --unit-hq: 215 14% 50%;
+  --unit-academy: 248 62% 58%; /* #6250d6 */
+  --unit-figureweb: 213 68% 50%; /* #2a78d6 */
+  --unit-telecom: 17 82% 56%; /* #eb6834 */
+  --unit-hq: 159 73% 40%; /* #1baf7a */
+  --series-expense: 337 70% 70%;
+  --series-profit: 120 100% 26%;
+  --chart-grid: 240 6% 92%;
   --shadow: 240 30% 8%;
   color-scheme: light;
 }
@@ -44,11 +47,14 @@
     --danger: 0 80% 64%;
     --warning: 38 95% 58%;
     --success: 152 55% 52%;
-    --unit-academy: 262 85% 72%;
-    --unit-figureweb: 199 90% 60%;
-    --unit-telecom: 32 95% 60%;
-    --unit-hq: 215 16% 62%;
-    --shadow: 0 0% 0%;
+    --unit-academy: 247 69% 72%; /* #9085e9 */
+    --unit-figureweb: 213 77% 56%; /* #3987e5 */
+    --unit-telecom: 17 70% 50%; /* #d95926 */
+    --unit-hq: 159 73% 36%; /* #199e70 */
+    --series-expense: 338 61% 58%;
+    --series-profit: 120 100% 26%;
+    --chart-grid: 240 4% 18%;
+  --shadow: 0 0% 0%;
     color-scheme: dark;
   }
 }
@@ -69,10 +75,13 @@
   --danger: 0 80% 64%;
   --warning: 38 95% 58%;
   --success: 152 55% 52%;
-  --unit-academy: 262 85% 72%;
-  --unit-figureweb: 199 90% 60%;
-  --unit-telecom: 32 95% 60%;
-  --unit-hq: 215 16% 62%;
+  --unit-academy: 247 69% 72%; /* #9085e9 */
+  --unit-figureweb: 213 77% 56%; /* #3987e5 */
+  --unit-telecom: 17 70% 50%; /* #d95926 */
+  --unit-hq: 159 73% 36%; /* #199e70 */
+  --series-expense: 338 61% 58%;
+  --series-profit: 120 100% 26%;
+  --chart-grid: 240 4% 18%;
   --shadow: 0 0% 0%;
   color-scheme: dark;
 }

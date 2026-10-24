@@ -40,3 +40,17 @@ registerSearch(async (ctx, q) => {
   const rows = await db.deal.findMany({ where: { AND: [dealWhere(ctx, "VIEW"), { title: contains(q) }] }, take: 5, orderBy: { updatedAt: "desc" }, include: { stage: { select: { name: true } } } });
   return rows.map((d) => ({ id: d.id, kind: "Deal", title: d.title, subtitle: d.stage.name, href: `/customers/pipelines?p=${d.pipelineId}&deal=${d.id}` }));
 });
+
+// ── Finance ──
+import { invoiceWhere } from "@/server/modules/finance/scope";
+
+registerSearch(async (ctx, q) => {
+  if (!scopeOf(ctx, "finance.invoices", "VIEW")) return [];
+  const rows = await db.invoice.findMany({
+    where: { AND: [invoiceWhere(ctx, "VIEW"), { OR: [{ number: contains(q) }, { contact: { displayName: contains(q) } }, { company: { name: contains(q) } }] }] },
+    take: 5,
+    orderBy: { issueDate: "desc" },
+    include: { contact: { select: { displayName: true } }, company: { select: { name: true } } },
+  });
+  return rows.map((i) => ({ id: i.id, kind: i.kind === "QUOTE" ? "Quote" : "Invoice", title: i.number, subtitle: `${i.company?.name ?? i.contact?.displayName ?? ""} · ${i.status.replace("_", " ").toLowerCase()}`, href: `/money/invoices/${i.id}` }));
+});

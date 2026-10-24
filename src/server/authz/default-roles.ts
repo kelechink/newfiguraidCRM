@@ -31,6 +31,7 @@ const EMPLOYEE_BASE: Grant[] = [
   ["documents", V, "OWN"],
   ["reports.daily", VC, "OWN"],
   ["targets", V, "OWN"],
+  ["finance.expenses", VC, "OWN"], // expense claims with receipts
 ];
 
 const OWN_WORK: Grant[] = [
@@ -164,6 +165,7 @@ export const DEFAULT_ROLES: DefaultRole[] = [
       ["tenders", VCE, "UNIT"],
       ["referrals", V, "UNIT"],
       ["finance.reports", V, "UNIT"],
+      ["finance.expenses", VC, "UNIT"],
       ["telecom.carriers", V, "UNIT"],
       ["telecom.routes", V, "UNIT"],
       ["telecom.traffic", V, "UNIT"],
