@@ -19,3 +19,24 @@ registerSearch(async (ctx, q) => {
   const rows = await db.user.findMany({ where: { status: { in: ["ACTIVE", "ONBOARDING"] }, OR: [{ name: contains(q) }, { email: contains(q) }] }, take: 5 });
   return rows.map((u) => ({ id: u.id, kind: "Person", title: u.name, subtitle: u.email, href: can(ctx, "hr.staff", "VIEW") ? `/team/staff/${u.id}` : `/work/messages?dm=${u.id}` }));
 });
+
+// ── CRM ──
+import { contactWhere, dealWhere } from "@/server/modules/crm/scope";
+
+registerSearch(async (ctx, q) => {
+  if (!scopeOf(ctx, "crm.contacts", "VIEW")) return [];
+  const digits = q.replace(/\D/g, "");
+  const rows = await db.contact.findMany({
+    where: { AND: [contactWhere(ctx, "VIEW"), { OR: [{ displayName: contains(q) }, { email: contains(q) }, ...(digits.length >= 4 ? [{ phoneE164: { contains: digits } }] : []), { company: { name: contains(q) } }] }] },
+    take: 6,
+    orderBy: { lastActivityAt: { sort: "desc", nulls: "last" } },
+    include: { company: { select: { name: true } } },
+  });
+  return rows.map((c) => ({ id: c.id, kind: "Contact", title: c.displayName, subtitle: c.company?.name ?? c.email ?? c.phoneE164 ?? undefined, href: `/customers/contacts/${c.id}` }));
+});
+
+registerSearch(async (ctx, q) => {
+  if (!scopeOf(ctx, "crm.deals", "VIEW")) return [];
+  const rows = await db.deal.findMany({ where: { AND: [dealWhere(ctx, "VIEW"), { title: contains(q) }] }, take: 5, orderBy: { updatedAt: "desc" }, include: { stage: { select: { name: true } } } });
+  return rows.map((d) => ({ id: d.id, kind: "Deal", title: d.title, subtitle: d.stage.name, href: `/customers/pipelines?p=${d.pipelineId}&deal=${d.id}` }));
+});
