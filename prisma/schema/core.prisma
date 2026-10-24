@@ -75,6 +75,7 @@ model User {
   // 2FA (TOTP) — mandatory for admin/finance roles (Security #1)
   totpSecretEnc      String?
   twoFactorEnabledAt DateTime?
+  totpLastCounter    Int? // last accepted TOTP time-step: a code can be used once
   failedLoginCount   Int       @default(0)
   lockedUntil        DateTime?
   sessionVersion     Int       @default(0) // bump → every session invalid (remote sign-out)
@@ -89,6 +90,7 @@ model User {
   grantsIssued      UserGrant[]        @relation("GrantIssuer")
   sessions          UserSession[]
   recoveryCodes     RecoveryCode[]
+  authTokens        AuthToken[]
   devices           Device[]           @relation("DeviceOwner")
   devicesApproved   Device[]           @relation("DeviceApprover")
   auditEntries      AuditLog[]
@@ -269,6 +271,23 @@ model UserSession {
   revokedAt   DateTime?
 
   @@index([userId])
+}
+
+enum AuthTokenPurpose {
+  INVITE
+  PASSWORD_RESET
+}
+
+/// Single-use emailed link tokens. Only the SHA-256 of the token is stored.
+model AuthToken {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purpose   AuthTokenPurpose
+  tokenHash String           @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime         @default(now())
 }
 
 model RecoveryCode {

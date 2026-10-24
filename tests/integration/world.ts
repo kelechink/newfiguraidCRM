@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import type { UnitCode } from "@prisma/client";
 import { isoWeekday, localDate } from "@/domain/sop/schedule";
 import { loadCtx } from "@/server/authz/context";
-import { DEFAULT_ROLES } from "@/server/authz/default-roles";
+import { DEFAULT_ROLES, grantRows } from "@/server/authz/default-roles";
 import { db } from "@/server/db";
 
 export async function ensureRolesAndUnits() {
@@ -12,12 +12,12 @@ export async function ensureRolesAndUnits() {
     const role = await db.role.upsert({
       where: { key: r.key },
       update: {},
-      create: { key: r.key, name: r.name, isSystem: true, requires2fa: r.requires2fa },
+      create: { key: r.key, name: r.name, description: r.description, isSystem: true, requires2fa: r.requires2fa },
     });
     // keep test DB roles in step with the code defaults
     await db.rolePermission.deleteMany({ where: { roleId: role.id } });
     await db.rolePermission.createMany({
-      data: r.grants.flatMap(([module, actions, scope]) => actions.map((action) => ({ roleId: role.id, module, action, scope }))),
+      data: grantRows(r).map((g) => ({ roleId: role.id, ...g })),
     });
   }
   const units = {} as Record<UnitCode, string>;

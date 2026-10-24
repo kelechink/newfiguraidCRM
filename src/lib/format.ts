@@ -37,3 +37,47 @@ export function describeDue(iso: string, now = new Date()): { label: string; ton
   if (diff === 1) return { label: `Tomorrow ${formatTime(due)}`, tone: "soon" };
   return { label: formatDay(due, { weekday: true }), tone: diff <= 3 ? "soon" : "later" };
 }
+
+// ── money & numbers ──────────────────────────────────────────────────────────
+
+const SYMBOL: Record<string, string> = { NGN: "₦", USD: "$", GBP: "£", EUR: "€" };
+
+/** "₦1,250,000" / "$84.20". Accepts Prisma Decimals, numbers or strings. */
+export function money(value: unknown, currency = "NGN", opts: { decimals?: number; compact?: boolean } = {}): string {
+  const n = Number(value ?? 0);
+  const sign = n < 0 ? "−" : "";
+  const abs = Math.abs(n);
+  const sym = SYMBOL[currency] ?? `${currency} `;
+  if (opts.compact && abs >= 1_000) {
+    const units: [number, string][] = [[1e9, "bn"], [1e6, "m"], [1e3, "k"]];
+    const [div, suffix] = units.find(([d]) => abs >= d)!;
+    return `${sign}${sym}${(abs / div).toFixed(abs / div >= 100 ? 0 : 1).replace(/\.0$/, "")}${suffix}`;
+  }
+  const decimals = opts.decimals ?? (currency === "NGN" ? 0 : 2);
+  return `${sign}${sym}${abs.toLocaleString("en-NG", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
+}
+
+export function num(value: unknown, decimals = 0): string {
+  return Number(value ?? 0).toLocaleString("en-NG", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
+export function pct(value: number | null | undefined, decimals = 1): string {
+  if (value == null || !Number.isFinite(value)) return "—";
+  return `${value.toFixed(decimals)}%`;
+}
+
+export function formatDateTime(d: Date | string): string {
+  const date = typeof d === "string" ? new Date(d) : d;
+  return `${formatDay(date, { weekday: true })} · ${formatTime(date)}`;
+}
+
+/** "3m ago", "2h ago", "Tue 20 Oct". */
+export function ago(d: Date | string, now = Date.now()): string {
+  const date = typeof d === "string" ? new Date(d) : d;
+  const s = Math.round((now - date.getTime()) / 1000);
+  if (s < 60) return "just now";
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86_400) return `${Math.floor(s / 3600)}h ago`;
+  if (s < 7 * 86_400) return `${Math.floor(s / 86_400)}d ago`;
+  return formatDay(date);
+}

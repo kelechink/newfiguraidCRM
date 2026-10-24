@@ -23,21 +23,47 @@ export function middleware(req: NextRequest) {
   const headers = new Headers(req.headers);
   headers.set("x-nonce", nonce);
   headers.set("Content-Security-Policy", csp);
+  headers.set("x-pathname", req.nextUrl.pathname + req.nextUrl.search);
 
   // Cheap gate: no session cookie → sign in. The real check (revocation, idle
   // timeout, permissions) happens server-side in getCtx() on every request.
   const { pathname } = req.nextUrl;
   const hasSession = req.cookies.has("__Secure-next-auth.session-token") || req.cookies.has("next-auth.session-token");
-  if (!hasSession && pathname !== "/login") {
+  if (!hasSession && !isPublic(pathname)) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
-    url.search = "";
+    url.search = pathname === "/" ? "" : `?next=${encodeURIComponent(pathname)}`;
     return NextResponse.redirect(url);
   }
 
   const res = NextResponse.next({ request: { headers } });
   res.headers.set("Content-Security-Policy", csp);
   return res;
+}
+
+// Reachable without signing in. Each of these does its own verification
+// (webhook signatures, single-use tokens, rate limits, CAPTCHA).
+const PUBLIC_PREFIXES = [
+  "/login",
+  "/accept-invite/",
+  "/reset-password",
+  "/forgot-password",
+  "/privacy",
+  "/verify/",
+  "/f/",
+  "/sign/",
+  "/csat/",
+  "/r/",
+  "/l/",
+  "/unsubscribe",
+  "/api/webhooks/",
+  "/api/widget/",
+  "/api/public/",
+  "/widget.js",
+];
+
+function isPublic(pathname: string): boolean {
+  return PUBLIC_PREFIXES.some((p) => pathname === p.replace(/\/$/, "") || pathname.startsWith(p));
 }
 
 export const config = {

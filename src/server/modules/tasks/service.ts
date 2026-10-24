@@ -7,6 +7,7 @@ import { requireScope, type Ctx } from "@/server/authz/context";
 import { NotFoundError, RuleError } from "@/server/authz/errors";
 import { audit } from "@/server/audit/audit";
 import { db } from "@/server/db";
+import { notify } from "@/server/notify/notify";
 import {
   BoardFilterInput,
   CreateTaskInput,
@@ -162,7 +163,7 @@ export async function createTask(ctx: Ctx, rawInput: unknown): Promise<{ id: str
   if (!assignee) throw new RuleError("Pick someone in that unit to assign this to");
 
   const origin = originForCreator(ctx.roleKey);
-  return db.$transaction(async (tx) => {
+  const created = await db.$transaction(async (tx) => {
     const task = await tx.task.create({
       data: {
         title: input.title,
@@ -177,17 +178,6 @@ export async function createTask(ctx: Ctx, rawInput: unknown): Promise<{ id: str
         boardRank: await topOfColumnRank(tx, "TODO"),
       },
     });
-    if (assignee.id !== ctx.userId) {
-      await tx.notification.create({
-        data: {
-          userId: assignee.id,
-          type: "task.assigned",
-          title: `${ctx.name} assigned you a task`,
-          body: task.title,
-          link: `/work/tasks?task=${task.id}`,
-        },
-      });
-    }
     await audit(tx, {
       actorId: ctx.userId,
       action: "task.create",
@@ -196,8 +186,12 @@ export async function createTask(ctx: Ctx, rawInput: unknown): Promise<{ id: str
       unitId: task.unitId,
       after: { title: task.title, assigneeId: task.assigneeId, origin },
     });
-    return { id: task.id };
+    return task;
   });
+  if (assignee.id !== ctx.userId) {
+    await notify({ userIds: [assignee.id], type: "task.assigned", title: `${ctx.name} assigned you a task`, body: created.title, link: `/work/tasks?task=${created.id}` });
+  }
+  return { id: created.id };
 }
 
 export async function moveTask(ctx: Ctx, rawInput: unknown): Promise<{ rank: string }> {

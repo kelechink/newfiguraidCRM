@@ -21,3 +21,11 @@ export class RuleError extends Error {
     this.name = "RuleError";
   }
 }
+
+/** Finance/payroll action needs a fresh password entry (Security #10). */
+export class ReauthRequiredError extends Error {
+  constructor() {
+    super("Please confirm your password to continue");
+    this.name = "ReauthRequiredError";
+  }
+}

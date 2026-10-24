@@ -8,16 +8,22 @@ import { db } from "@/server/db";
 export interface Ctx {
   userId: string;
   name: string;
+  email: string;
   roleKey: string;
+  roleName: string;
   status: string;
+  sessionId: string | null; // null in tests / background jobs
   unitIds: string[]; // primary unit + memberships → the UNIT scope
+  primaryUnitId: string | null;
   perms: ReadonlyMap<string, PermScope>; // "module:ACTION" → widest scope held
+  requires2fa: boolean;
+  has2fa: boolean;
 }
 
 /** Modules a user may use while their contract pack is unsigned (PRD Module L). */
-const ONBOARDING_MODULES: ReadonlySet<string> = new Set(["attendance"]);
+const ONBOARDING_MODULES: ReadonlySet<string> = new Set(["attendance", "dashboard.today", "documents", "messaging", "announcements"]);
 
-export async function loadCtx(userId: string): Promise<Ctx> {
+export async function loadCtx(userId: string, sessionId: string | null = null): Promise<Ctx> {
   const user = await db.user.findUniqueOrThrow({
     where: { id: userId },
     include: {
@@ -40,7 +46,20 @@ export async function loadCtx(userId: string): Promise<Ctx> {
   const unitIds = new Set(user.units.map((u) => u.unitId));
   if (user.primaryUnitId) unitIds.add(user.primaryUnitId);
 
-  return { userId: user.id, name: user.name, roleKey: user.role.key, status: user.status, unitIds: [...unitIds], perms };
+  return {
+    userId: user.id,
+    name: user.name,
+    email: user.email,
+    roleKey: user.role.key,
+    roleName: user.role.name,
+    status: user.status,
+    sessionId,
+    unitIds: [...unitIds],
+    primaryUnitId: user.primaryUnitId,
+    perms,
+    requires2fa: user.role.requires2fa,
+    has2fa: !!user.twoFactorEnabledAt,
+  };
 }
 
 export function scopeOf(ctx: Ctx, module: PermModule, action: PermAction): PermScope | null {
@@ -57,4 +76,52 @@ export function requireScope(ctx: Ctx, module: PermModule, action: PermAction): 
 
 export function can(ctx: Ctx, module: PermModule, action: PermAction): boolean {
   return scopeOf(ctx, module, action) !== null;
+}
+
+export function canAll(ctx: Ctx, module: PermModule, action: PermAction): boolean {
+  return scopeOf(ctx, module, action) === "ALL";
+}
+
+/**
+ * Turn a scope into a Prisma `where` for a model. Every module service calls this
+ * with how "my unit" and "mine" map onto its own columns.
+ */
+export function scopeWhere<W extends object>(
+  ctx: Ctx,
+  scope: PermScope,
+  map: { unit: (unitIds: string[]) => W; own: (userId: string) => W },
+): W | Record<string, never> {
+  switch (scope) {
+    case "ALL":
+      return {};
+    case "UNIT":
+      return map.unit(ctx.unitIds);
+    case "OWN":
+      return map.own(ctx.userId);
+  }
+}
+
+/** Shorthand: require the permission and return the scoped where in one call. */
+export function scoped<W extends object>(
+  ctx: Ctx,
+  module: PermModule,
+  action: PermAction,
+  map: { unit: (unitIds: string[]) => W; own: (userId: string) => W },
+): W | Record<string, never> {
+  return scopeWhere(ctx, requireScope(ctx, module, action), map);
+}
+
+/** True if the caller may act on a record in `unitId` owned by `ownerId` at the given action. */
+export function canOnRecord(ctx: Ctx, module: PermModule, action: PermAction, rec: { unitId?: string | null; ownerIds: (string | null | undefined)[] }): boolean {
+  const scope = scopeOf(ctx, module, action);
+  if (!scope) return false;
+  if (scope === "ALL") return true;
+  if (scope === "UNIT") return !!rec.unitId && ctx.unitIds.includes(rec.unitId);
+  return rec.ownerIds.includes(ctx.userId);
+}
+
+/** Restrict a requested unit to what the caller may touch at UNIT scope. */
+export function assertUnitInScope(ctx: Ctx, scope: PermScope, unitId: string, message = "You can only do that in your own unit") {
+  if (scope === "ALL") return;
+  if (!ctx.unitIds.includes(unitId)) throw new ForbiddenError(message);
 }

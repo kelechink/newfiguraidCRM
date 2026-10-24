@@ -4,7 +4,7 @@ import { PrismaClient, type Priority, type TaskStatus, type UnitCode } from "@pr
 import { hash } from "@node-rs/argon2";
 import { initialRanks } from "../../src/domain/shared/rank";
 import { addDays, localDate, occurrenceKey, zonedDateTime } from "../../src/domain/sop/schedule";
-import { DEFAULT_ROLES } from "../../src/server/authz/default-roles";
+import { DEFAULT_ROLES, grantRows } from "../../src/server/authz/default-roles";
 
 const db = new PrismaClient();
 
@@ -197,7 +197,8 @@ async function main() {
         name: r.name,
         isSystem: true,
         requires2fa: r.requires2fa,
-        permissions: { create: r.grants.flatMap(([module, actions, scope]) => actions.map((action) => ({ module, action, scope }))) },
+        description: r.description,
+        permissions: { create: grantRows(r) },
       },
     });
     roles.set(r.key, row.id);
