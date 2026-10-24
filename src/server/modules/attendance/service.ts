@@ -69,9 +69,11 @@ export async function recomputeDay(userId: string, date: string) {
       firstInAt: r.firstInAt,
       lastOutAt: r.lastOutAt,
       minutesLate: r.minutesLate,
+      minutesEarly: r.minutesEarly,
+      missingClockOut: r.missingClockOut,
       workedMinutes: r.workedMinutes,
       overtimeMinutes: r.overtimeMinutes,
-      isFlagged: punches.some((p) => p.reviewStatus === "PENDING"),
+      isFlagged: punches.some((p) => p.reviewStatus === "PENDING") || r.missingClockOut,
     },
   });
 }

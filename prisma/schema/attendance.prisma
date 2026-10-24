@@ -37,6 +37,8 @@ model AttendanceDay {
   firstInAt       DateTime?
   lastOutAt       DateTime?
   minutesLate     Int                @default(0)
+  minutesEarly    Int                @default(0) // signed off before scheduled close
+  missingClockOut Boolean            @default(false) // clocked in, never out: flagged, not charged
   overtimeMinutes Int                @default(0)
   workedMinutes   Int                @default(0)
   isFlagged       Boolean            @default(false)

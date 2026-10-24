@@ -104,7 +104,8 @@ export interface Schedule {
   workingDays: number[]; // ISO weekdays
 }
 
-export const DEFAULT_SCHEDULE: Schedule = { resumeTime: "09:00", closeTime: "17:00", graceMinutes: 15, workingDays: [1, 2, 3, 4, 5] };
+// Company rule: Monday–Friday, 09:00–17:00, no grace — 09:00:01 is already late.
+export const DEFAULT_SCHEDULE: Schedule = { resumeTime: "09:00", closeTime: "17:00", graceMinutes: 0, workingDays: [1, 2, 3, 4, 5] };
 
 export type DayStatus = "PRESENT" | "LATE" | "ABSENT" | "ON_LEAVE" | "HOLIDAY" | "WEEKEND" | "PENDING";
 
@@ -115,6 +116,10 @@ export interface DayResult {
   firstInAt: Date | null;
   lastOutAt: Date | null;
   minutesLate: number;
+  /** Signed off before scheduled close (last punch of the day is an OUT before close). */
+  minutesEarly: number;
+  /** Clocked in but never out on a finished day: flagged for review, not charged. */
+  missingClockOut: boolean;
   workedMinutes: number;
   overtimeMinutes: number;
 }
@@ -154,7 +159,7 @@ export function computeDay(input: {
   }
   if (open && date === input.today) worked += ((input.now ?? new Date()).getTime() - open.getTime()) / 60_000;
 
-  const base = { scheduledStart, scheduledEnd, firstInAt, lastOutAt, workedMinutes: Math.max(0, Math.round(worked)) };
+  const base = { scheduledStart, scheduledEnd, firstInAt, lastOutAt, workedMinutes: Math.max(0, Math.round(worked)), minutesEarly: 0, missingClockOut: false };
 
   if (input.holiday) return { ...base, status: "HOLIDAY", minutesLate: 0, overtimeMinutes: 0 };
   if (input.onLeave) return { ...base, status: "ON_LEAVE", minutesLate: 0, overtimeMinutes: 0 };
@@ -163,13 +168,19 @@ export function computeDay(input: {
   if (!firstInAt) {
     return { ...base, status: date < input.today ? "ABSENT" : "PENDING", minutesLate: 0, overtimeMinutes: 0 };
   }
-  const lateBy = Math.floor((firstInAt.getTime() - scheduledStart!.getTime()) / 60_000);
+  // any part of a minute after resumption (plus grace, if a person has one) counts
+  const lateBy = Math.ceil((firstInAt.getTime() - scheduledStart!.getTime()) / 60_000);
   const late = lateBy > schedule.graceMinutes;
+  const lastPunch = punches.at(-1)!;
+  const signedOff = lastPunch.type === "OUT";
+  const earlyBy = signedOff ? Math.ceil((scheduledEnd!.getTime() - lastPunch.at.getTime()) / 60_000) : 0;
   const over = lastOutAt ? Math.floor((lastOutAt.getTime() - scheduledEnd!.getTime()) / 60_000) : 0;
   return {
     ...base,
     status: late ? "LATE" : "PRESENT",
     minutesLate: late ? lateBy : 0,
+    minutesEarly: earlyBy > 0 ? earlyBy : 0,
+    missingClockOut: !signedOff && date < input.today,
     overtimeMinutes: over >= OVERTIME_THRESHOLD_MIN ? over : 0,
   };
 }

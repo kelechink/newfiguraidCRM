@@ -38,7 +38,7 @@ export default async function PayrollRunPage({ params }: { params: Promise<{ id:
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Staff" value={String(run.rows.length)} />
         <StatCard label="Gross" value={money(run.totals.gross, "NGN", { compact: true })} />
-        <StatCard label="Lateness & absence" value={money(run.totals.attendance, "NGN", { compact: true })} sub="After waivers and caps" />
+        <StatCard label="Attendance deductions" value={money(run.totals.attendance, "NGN", { compact: true })} sub="After waivers and caps" />
         <StatCard label="Net pay" value={money(run.totals.net, "NGN", { compact: true })} tone={run.needsSignoff && !run.signedOffBy ? "warning" : undefined} />
       </div>
       <Card padded={false}>

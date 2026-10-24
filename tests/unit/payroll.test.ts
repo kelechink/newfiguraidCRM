@@ -92,3 +92,22 @@ describe("payslip", () => {
     expect(owed.net).toBe(0);
   });
 });
+
+describe("Figuraid attendance rule", () => {
+  const rule: PolicyRule = { latenessMode: "FIXED", fixedAmount: 500, earlyLeaveAmount: 500, tiers: [], absenceMode: "FIXED", absenceAmount: 3000, monthlyCapAmount: null, monthlyCapPct: null };
+  it("charges ₦500 per late arrival, ₦500 per early sign-off, ₦3,000 per unexcused absence, with no cap", () => {
+    const days = [
+      { date: "2026-10-05", status: "LATE" as const, minutesLate: 1, minutesEarly: 0, excused: false }, // 09:01 → 500
+      { date: "2026-10-06", status: "LATE" as const, minutesLate: 40, minutesEarly: 30, excused: false }, // late and left early → 1,000
+      { date: "2026-10-07", status: "PRESENT" as const, minutesLate: 0, minutesEarly: 5, excused: false }, // left 16:55 → 500
+      { date: "2026-10-08", status: "ABSENT" as const, minutesLate: 0, excused: false }, // 3,000
+      { date: "2026-10-09", status: "ABSENT" as const, minutesLate: 0, excused: true }, // approved excuse → 0
+      { date: "2026-10-12", status: "ON_LEAVE" as const, minutesLate: 0, excused: false },
+      ...Array.from({ length: 12 }, (_, i) => ({ date: `2026-10-${String(13 + i).padStart(2, "0")}`, status: "ABSENT" as const, minutesLate: 0, excused: false })),
+    ];
+    const r = attendanceDeductions({ rule, monthlyGross: 50_000, workingDaysInMonth: 21, days });
+    expect(r.items.slice(0, 4).map((i) => [i.date, i.type, i.amount])).toEqual([["2026-10-05", "LATENESS", 500], ["2026-10-06", "LATENESS", 500], ["2026-10-06", "EARLY_DEPARTURE", 500], ["2026-10-07", "EARLY_DEPARTURE", 500]]);
+    expect(r.cap).toBeNull();
+    expect(r.total).toBe(2_000 + 13 * 3_000); // no cap, even beyond the month's pay
+  });
+});

@@ -1,4 +1,5 @@
 import "server-only";
+import { rateFor } from "@/server/fx/rates";
 import { z } from "zod";
 import { round2, toNgn } from "@/domain/finance/money";
 import { audit } from "@/server/audit/audit";
@@ -111,7 +112,7 @@ export async function recordProviderPayment(input: {
   if (existing) return { created: false, paymentId: existing.id };
   const unit = await db.businessUnit.findUniqueOrThrow({ where: { code: input.unitCode } });
   const invoice = input.invoiceId ? await db.invoice.findUnique({ where: { id: input.invoiceId } }) : null;
-  const fx = input.currency === "NGN" ? null : Number((await db.setting.findUnique({ where: { key: "finance.usd_ngn_rate" } }))?.value ?? 1550);
+  const fx = input.currency === "NGN" ? null : await rateFor(input.currency);
   const contact = input.payerEmail ? await db.contact.findFirst({ where: { emailNormalized: input.payerEmail.toLowerCase(), deletedAt: null } }) : null;
   return db.$transaction(async (tx) => {
     const p = await tx.payment.create({

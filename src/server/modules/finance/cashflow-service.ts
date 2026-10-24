@@ -1,4 +1,5 @@
 import "server-only";
+import { currentRates } from "@/server/fx/rates";
 import type { Recurrence } from "@prisma/client";
 import { z } from "zod";
 import { projectCash, round2, type Flow, type Scenario } from "@/domain/finance/money";
@@ -19,8 +20,8 @@ function addMonthsKeepDay(date: string, months: number) {
 
 /** Everything that moves cash in the next `days`, as dated flows in NGN. */
 export async function buildFlows(today: string, days: number): Promise<{ opening: number; flows: Flow[] }> {
-  const usd = Number(await getSetting("finance.usd_ngn_rate"));
-  const ngn = (amount: number, currency: string, fx?: number | null) => (currency === "NGN" ? amount : amount * (fx ?? usd));
+  const rates = await currentRates();
+  const ngn = (amount: number, currency: string, fx?: number | null) => (currency === "NGN" ? amount : amount * (fx ?? rates[currency as keyof typeof rates]));
   const horizon = addDays(today, days);
   const flows: Flow[] = [];
 

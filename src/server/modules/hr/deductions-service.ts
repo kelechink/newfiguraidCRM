@@ -10,6 +10,7 @@ import { db } from "@/server/db";
 import { notify } from "@/server/notify/notify";
 
 const id = z.string().cuid();
+const AUTO_TYPES: ("LATENESS" | "EARLY_DEPARTURE" | "ABSENCE")[] = ["LATENESS", "EARLY_DEPARTURE", "ABSENCE"];
 export const month = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Use YYYY-MM");
 type Tx = Prisma.TransactionClient;
 
@@ -22,6 +23,7 @@ export function toRule(p: LatenessPolicy): PolicyRule {
   return {
     latenessMode: p.latenessMode,
     fixedAmount: p.fixedAmount != null ? Number(p.fixedAmount) : null,
+    earlyLeaveAmount: p.earlyLeaveAmount != null ? Number(p.earlyLeaveAmount) : null,
     tiers: (p.tiers as Tier[] | null) ?? [],
     absenceMode: p.absenceMode,
     absenceAmount: p.absenceAmount != null ? Number(p.absenceAmount) : null,
@@ -59,17 +61,17 @@ export async function recomputeDeductions(tx: Tx, userId: string, m: string) {
   const holidays = new Set((await tx.publicHoliday.findMany({ where: { date: { gte: start, lt: end } } })).map((h) => h.date.toISOString().slice(0, 10)));
   const working = workingDaysInMonth(m, profile?.workingDays ?? [1, 2, 3, 4, 5], holidays);
   const days = await tx.attendanceDay.findMany({ where: { userId, date: { gte: start, lt: end } }, include: { excuses: { where: { status: "APPROVED" }, select: { id: true } } } });
-  const existing = await tx.deduction.findMany({ where: { userId, periodMonth: m, type: { in: ["LATENESS", "ABSENCE"] } } });
+  const existing = await tx.deduction.findMany({ where: { userId, periodMonth: m, type: { in: AUTO_TYPES } } });
   if (existing.some((d) => d.payslipId)) return { items: existing, total: existing.reduce((n, d) => n + (d.status === "waived" ? 0 : Number(d.amount)), 0), locked: true };
   const waived = new Set(existing.filter((d) => d.status === "waived").map((d) => `${d.dayId}|${d.type}`));
-  await tx.deduction.deleteMany({ where: { userId, periodMonth: m, type: { in: ["LATENESS", "ABSENCE"] }, status: { not: "waived" }, payslipId: null } });
+  await tx.deduction.deleteMany({ where: { userId, periodMonth: m, type: { in: AUTO_TYPES }, status: { not: "waived" }, payslipId: null } });
   if (!policy) return { items: [], total: 0, locked: false };
   const gross = profile ? grossOf(profile).gross : 0;
   const result = attendanceDeductions({
     rule: toRule(policy),
     monthlyGross: gross,
     workingDaysInMonth: working.length,
-    days: days.map((d) => ({ date: d.date.toISOString().slice(0, 10), dayId: d.id, status: d.status, minutesLate: d.minutesLate, excused: d.excuses.length > 0 })),
+    days: days.map((d) => ({ date: d.date.toISOString().slice(0, 10), dayId: d.id, status: d.status, minutesLate: d.minutesLate, minutesEarly: d.minutesEarly, excused: d.excuses.length > 0 })),
   });
   const lines = result.items.filter((i) => !waived.has(`${i.dayId}|${i.type}`));
   if (lines.length) await tx.deduction.createMany({ data: lines.map((l) => ({ userId, dayId: l.dayId ?? null, type: l.type, amount: l.amount, reason: l.reason, status: l.status, periodMonth: m })) });
@@ -139,6 +141,7 @@ const PolicyInput = z.object({
   unitId: id.nullable().default(null),
   latenessMode: z.enum(["FIXED", "TIERED"]),
   fixedAmount: z.coerce.number().min(0).max(1e7).nullable().default(null),
+  earlyLeaveAmount: z.coerce.number().min(0).max(1e7).nullable().default(null),
   tiers: z.array(z.object({ fromMinutes: z.coerce.number().int().min(1).max(1440), toMinutes: z.coerce.number().int().min(1).max(1440).nullable(), amount: z.coerce.number().min(0).max(1e7) })).max(10).default([]),
   absenceMode: z.enum(["DAILY_RATE", "FIXED"]),
   absenceAmount: z.coerce.number().min(0).max(1e7).nullable().default(null),

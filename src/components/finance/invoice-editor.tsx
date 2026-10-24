@@ -28,7 +28,7 @@ export interface InvoiceDraft {
 
 const blank = (): Line => ({ description: "", quantity: "1", unitPrice: "", vatable: true });
 
-export function InvoiceEditor({ draft, units, customers, defaultFx }: { draft: InvoiceDraft; units: { id: string; name: string }[]; customers: { id: string; name: string; email: string | null; unitId: string }[]; defaultFx: number }) {
+export function InvoiceEditor({ draft, units, customers, rates }: { draft: InvoiceDraft; units: { id: string; name: string }[]; customers: { id: string; name: string; email: string | null; unitId: string }[]; rates: Record<string, number> }) {
   const router = useRouter();
   const [kind, setKind] = useState(draft.kind);
   const [unitId, setUnitId] = useState(draft.unitId);
@@ -90,7 +90,7 @@ export function InvoiceEditor({ draft, units, customers, defaultFx }: { draft: I
           </div>
           {currency !== "NGN" && (
             <Field label={`Rate (₦ per ${currency})`} htmlFor="iv-fx" hint="Used to report this invoice in naira." error={save.errors.fxRate}>
-              <Input id="iv-fx" name="fx" type="number" step="0.0001" min={0} defaultValue={draft.fxRate ?? (currency === "USD" ? defaultFx : "")} required className="sm:max-w-[200px]" />
+              <Input key={currency} id="iv-fx" name="fx" type="number" step="0.0001" min={0} defaultValue={draft.fxRate ?? rates[currency] ?? ""} required className="sm:max-w-[200px]" />
             </Field>
           )}
         </Card>

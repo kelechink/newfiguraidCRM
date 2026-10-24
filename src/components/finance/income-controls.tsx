@@ -9,7 +9,7 @@ import { Dialog, DialogContent } from "@/ui/dialog";
 import { Field, Input, Select } from "@/ui/field";
 import { useAction } from "@/ui/use-action";
 
-export function RecordIncomeButton({ units, banks, defaultFx }: { units: { id: string; name: string }[]; banks: { id: string; name: string; currency: string }[]; defaultFx: number }) {
+export function RecordIncomeButton({ units, banks, rates }: { units: { id: string; name: string }[]; banks: { id: string; name: string; currency: string }[]; rates: Record<string, number> }) {
   const [open, setOpen] = useState(false);
   const [currency, setCurrency] = useState("NGN");
   const save = useAction(recordIncomeAction, { success: "Payment recorded", onSuccess: () => setOpen(false) });
@@ -27,7 +27,7 @@ export function RecordIncomeButton({ units, banks, defaultFx }: { units: { id: s
               <Field label="Amount" htmlFor="i-amt" error={save.errors.amount}><Input id="i-amt" name="amount" type="number" min={0} step="0.01" required autoFocus /></Field>
               <Field label="Currency" htmlFor="i-cur"><Select id="i-cur" value={currency} onChange={(e) => setCurrency(e.target.value)}>{["NGN", "USD", "GBP", "EUR"].map((c) => <option key={c}>{c}</option>)}</Select></Field>
             </div>
-            {currency !== "NGN" && <Field label={`Rate (₦ per ${currency})`} htmlFor="i-fx" hint="The rate you actually received."><Input id="i-fx" name="fx" type="number" step="0.0001" min={0} defaultValue={currency === "USD" ? defaultFx : ""} required /></Field>}
+            {currency !== "NGN" && <Field label={`Rate (₦ per ${currency})`} htmlFor="i-fx" hint="The rate you actually received."><Input key={currency} id="i-fx" name="fx" type="number" step="0.0001" min={0} defaultValue={rates[currency] ?? ""} required /></Field>}
             <Field label="Description" htmlFor="i-desc" error={save.errors.description}><Input id="i-desc" name="desc" required placeholder="e.g. MTN wholesale settlement week 42" /></Field>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Unit" htmlFor="i-unit"><Select id="i-unit" name="unit">{units.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}</Select></Field>

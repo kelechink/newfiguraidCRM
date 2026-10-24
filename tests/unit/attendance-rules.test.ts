@@ -63,8 +63,17 @@ describe("computeDay", () => {
   const run = (punches: { type: "IN" | "OUT"; at: Date }[], extra: Partial<Parameters<typeof computeDay>[0]> = {}) =>
     computeDay({ date: day, today: "2026-10-23", schedule: DEFAULT_SCHEDULE, punches: punches.map((p) => ({ ...p, accepted: true })), onLeave: false, holiday: false, ...extra });
 
-  it("within the grace period is present, not late", () => {
-    expect(run([{ type: "IN", at: at("09:14") }, { type: "OUT", at: at("17:05") }])).toMatchObject({ status: "PRESENT", minutesLate: 0 });
+  it("09:00 sharp is on time; any time after 09:00 is late (no grace)", () => {
+    expect(run([{ type: "IN", at: at("09:00") }, { type: "OUT", at: at("17:05") }])).toMatchObject({ status: "PRESENT", minutesLate: 0, minutesEarly: 0 });
+    expect(run([{ type: "IN", at: new Date(at("09:00").getTime() + 30_000) }, { type: "OUT", at: at("17:00") }])).toMatchObject({ status: "LATE", minutesLate: 1 });
+    expect(run([{ type: "IN", at: at("09:01") }, { type: "OUT", at: at("17:00") }])).toMatchObject({ status: "LATE", minutesLate: 1 });
+  });
+
+  it("signing off before 17:00 is an early departure; no clock-out is flagged, not charged", () => {
+    expect(run([{ type: "IN", at: at("08:50") }, { type: "OUT", at: at("16:59") }])).toMatchObject({ status: "PRESENT", minutesEarly: 1, missingClockOut: false });
+    expect(run([{ type: "IN", at: at("08:50") }, { type: "OUT", at: at("13:00") }, { type: "IN", at: at("14:00") }, { type: "OUT", at: at("17:00") }]).minutesEarly).toBe(0); // lunch break
+    expect(run([{ type: "IN", at: at("08:50") }])).toMatchObject({ minutesEarly: 0, missingClockOut: true });
+    expect(run([{ type: "IN", at: at("08:50") }], { today: day }).missingClockOut).toBe(false); // still at work
   });
 
   it("after grace is late, counting minutes from resumption time", () => {

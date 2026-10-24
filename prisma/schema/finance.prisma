@@ -370,3 +370,17 @@ model SupplierPrice {
 
   @@index([productKey])
 }
+
+/// Exchange rates to naira, append-only history. Every money view converts with the
+/// latest rate per currency; each transaction still keeps the rate captured on it.
+model FxRate {
+  id        String   @id @default(cuid())
+  currency  Currency
+  rateToNgn Decimal  @db.Decimal(18, 6) // ₦ per 1 unit of currency
+  source    String // manual | api
+  asOf      DateTime @default(now())
+  setById   String?
+  setBy     User?    @relation("FxRateSetter", fields: [setById], references: [id])
+
+  @@index([currency, asOf])
+}

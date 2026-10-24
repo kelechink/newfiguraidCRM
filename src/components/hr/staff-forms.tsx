@@ -83,7 +83,7 @@ export function ProfileButton({ userId, profile, offices, policies }: { userId: 
             <div className="grid gap-4 sm:grid-cols-3">
               <Field label="Resumes" htmlFor="p-res"><Input id="p-res" name="resume" type="time" defaultValue={p?.resumeTime ?? "09:00"} required /></Field>
               <Field label="Closes" htmlFor="p-close" error={save.errors.closeTime}><Input id="p-close" name="close" type="time" defaultValue={p?.closeTime ?? "17:00"} required /></Field>
-              <Field label="Grace (min)" htmlFor="p-grace"><Input id="p-grace" name="grace" type="number" min={0} max={120} defaultValue={p?.graceMinutes ?? 15} /></Field>
+              <Field label="Grace (min)" htmlFor="p-grace"><Input id="p-grace" name="grace" type="number" min={0} max={120} defaultValue={p?.graceMinutes ?? 0} /></Field>
             </div>
             <div className="flex flex-wrap gap-1.5" role="group" aria-label="Working days">
               {DAYS.map((d, i) => {

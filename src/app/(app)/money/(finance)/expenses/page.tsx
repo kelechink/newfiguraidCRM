@@ -3,7 +3,7 @@ import { ExpensesTable, NewExpenseButton } from "@/components/finance/expenses";
 import { can, scopeOf } from "@/server/authz/context";
 import { requireCtx } from "@/server/auth/session";
 import { bankAccounts, expenseCategories, listExpenses } from "@/server/modules/finance/money-service";
-import { getSetting } from "@/server/modules/settings/service";
+import { currentRates } from "@/server/fx/rates";
 import { currentUnit, listUnits } from "@/server/modules/shell/service";
 import { LinkTabs } from "@/ui/tabs";
 
@@ -18,7 +18,7 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
     expenseCategories(),
     listUnits(),
     bankAccounts(ctx),
-    getSetting("finance.usd_ngn_rate"),
+    currentRates(),
   ]);
   const scope = scopeOf(ctx, "finance.expenses", "CREATE");
   const tab = sp.mine ? "mine" : sp.status ?? "all";
@@ -35,7 +35,7 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
           ]}
         />
         {can(ctx, "finance.expenses", "CREATE") && (
-          <NewExpenseButton categories={cats} units={units.filter((u) => scope === "ALL" || ctx.unitIds.includes(u.id)).map((u) => ({ id: u.id, name: u.name }))} defaultFx={Number(usd)} />
+          <NewExpenseButton categories={cats} units={units.filter((u) => scope === "ALL" || ctx.unitIds.includes(u.id)).map((u) => ({ id: u.id, name: u.name }))} rates={usd} />
         )}
       </div>
       <ExpensesTable rows={rows} banks={banks} canPay={!!scopeOf(ctx, "finance.expenses", "APPROVE")} />

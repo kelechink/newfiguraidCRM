@@ -127,7 +127,7 @@ const ProfileInput = z.object({
   resumeTime: time.default("09:00"),
   closeTime: time.default("17:00"),
   workingDays: z.array(z.number().int().min(1).max(7)).min(1).max(7).default([1, 2, 3, 4, 5]),
-  graceMinutes: z.coerce.number().int().min(0).max(120).default(15),
+  graceMinutes: z.coerce.number().int().min(0).max(120).default(0),
   remoteAllowed: z.boolean().default(false),
   latenessPolicyId: id.nullable().default(null),
 });

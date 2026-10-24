@@ -34,7 +34,7 @@ type Row = {
   canDecide: boolean;
 };
 
-export function NewExpenseButton({ categories, units, defaultFx }: { categories: { id: string; name: string }[]; units: { id: string; name: string }[]; defaultFx: number }) {
+export function NewExpenseButton({ categories, units, rates }: { categories: { id: string; name: string }[]; units: { id: string; name: string }[]; rates: Record<string, number> }) {
   const [open, setOpen] = useState(false);
   const [currency, setCurrency] = useState("NGN");
   const save = useAction(createExpenseAction, { success: "Expense submitted for approval", onSuccess: () => setOpen(false) });
@@ -56,7 +56,7 @@ export function NewExpenseButton({ categories, units, defaultFx }: { categories:
               <Field label="Amount" htmlFor="e-amt"><Input id="e-amt" name="amount" type="number" min={0} step="0.01" required /></Field>
               <Field label="Currency" htmlFor="e-cur"><Select id="e-cur" value={currency} onChange={(e) => setCurrency(e.target.value)}>{["NGN", "USD", "GBP", "EUR"].map((c) => <option key={c}>{c}</option>)}</Select></Field>
             </div>
-            {currency !== "NGN" && <Field label={`Rate (₦ per ${currency})`} htmlFor="e-fx"><Input id="e-fx" name="fxRate" type="number" step="0.0001" min={0} defaultValue={currency === "USD" ? defaultFx : ""} required /></Field>}
+            {currency !== "NGN" && <Field label={`Rate (₦ per ${currency})`} htmlFor="e-fx"><Input key={currency} id="e-fx" name="fxRate" type="number" step="0.0001" min={0} defaultValue={rates[currency] ?? ""} required /></Field>}
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Category" htmlFor="e-cat"><Select id="e-cat" name="categoryId" required>{categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</Select></Field>
               <Field label="Unit" htmlFor="e-unit"><Select id="e-unit" name="unitId">{units.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}</Select></Field>

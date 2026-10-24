@@ -51,8 +51,28 @@ export default async function TelecomOverview({ searchParams }: { searchParams: 
           </ul>
         </Card>
       )}
+      {s.byCurrency.length > 0 && (
+        <Card padded={false}>
+          <CardHeader title="By billing currency" description="Totals above are in naira at today's rates; carriers are billed in their own currency." className="px-4 pt-3" actions={<Link href="/money/rates" className="text-[12.5px] text-accent hover:underline">Exchange rates</Link>} />
+          <Table>
+            <THead><tr><Th>Currency</Th><Th align="right">Minutes</Th><Th align="right">Revenue</Th>{s.seeMargin && <Th align="right">Margin</Th>}<Th align="right">Rate</Th><Th align="right">Revenue in ₦</Th></tr></THead>
+            <tbody>
+              {s.byCurrency.map((c) => (
+                <Tr key={c.currency}>
+                  <Td className="font-medium">{c.currency}</Td>
+                  <Td align="right" muted>{num(c.minutes)}</Td>
+                  <Td align="right">{money(c.revenue, c.currency)}</Td>
+                  {s.seeMargin && <Td align="right">{money(c.margin, c.currency)}</Td>}
+                  <Td align="right" muted>{c.currency === "NGN" ? "—" : `₦${num(c.rate, 2)}`}</Td>
+                  <Td align="right" className="font-medium">{money(c.revenue * c.rate)}</Td>
+                </Tr>
+              ))}
+            </tbody>
+          </Table>
+        </Card>
+      )}
       <Card>
-        <CardHeader title={s.seeMargin ? "Revenue, cost and margin" : "Billed minutes"} description={`Last ${days} days, by day of traffic`} />
+        <CardHeader title={s.seeMargin ? "Revenue, cost and margin" : "Billed minutes"} description={`Last ${days} days, by day of traffic, in naira`} />
         <TelecomTrend rows={s.byDay} currency={cur} seeMargin={s.seeMargin} />
       </Card>
       <div className="grid gap-4 lg:grid-cols-2">

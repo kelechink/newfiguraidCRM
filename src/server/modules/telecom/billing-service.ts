@@ -1,4 +1,5 @@
 import "server-only";
+import { currentRates, ngn, rateFor } from "@/server/fx/rates";
 import { z } from "zod";
 import { round2 } from "@/domain/finance/money";
 import { creditState, dueDateFor, lastClosedCycle, marginOf, round4, termsLabel } from "@/domain/telecom/rating";
@@ -25,6 +26,7 @@ export async function billingOverview(ctx: Ctx) {
   const seeBuy = canSeeBuy(ctx);
   const accounts = await db.carrierAccount.findMany({ where: { AND: [acc, { carrier: { isActive: true } }, seeBuy ? {} : { side: "CUSTOMER" }] }, include: { carrier: { select: { name: true } } }, orderBy: { carrier: { name: "asc" } } });
   const now = new Date();
+  const rates = await currentRates();
   return Promise.all(
     accounts.map(async (a) => {
       const cycle = lastClosedCycle(a.cycleAnchor, a.billingCycleDays, now);
@@ -46,6 +48,9 @@ export async function billingOverview(ctx: Ctx) {
         unbilledMinutes: Number((a.side === "CUSTOMER" ? unbilled._sum.customerBilledMinutes : unbilled._sum.vendorBilledMinutes) ?? 0),
         unbilledAmount: Number((a.side === "CUSTOMER" ? unbilled._sum.revenueAmount : unbilled._sum.costAmount) ?? 0),
         billed: billedThisCycle,
+        unbilledNgn: ngn(Number((a.side === "CUSTOMER" ? unbilled._sum.revenueAmount : unbilled._sum.costAmount) ?? 0), a.currency, rates),
+        balanceNgn: a.paymentMode === "PREPAID" && can(ctx, "telecom.prepaid", "VIEW") ? ngn(Number(a.prepaidBalance), a.currency, rates) : null,
+        exposureNgn: exposure != null ? ngn(exposure, a.currency, rates) : null,
         balance: a.paymentMode === "PREPAID" && can(ctx, "telecom.prepaid", "VIEW") ? Number(a.prepaidBalance) : null,
         lowBalance: a.paymentMode === "PREPAID" && a.lowBalanceAlert != null && Number(a.prepaidBalance) <= Number(a.lowBalanceAlert),
         exposure,
@@ -87,7 +92,7 @@ export async function invoiceCycle(ctx: Ctx | null, raw: unknown): Promise<{ id:
     const lines = [...byRoute.values()].sort((a, b) => b.amount - a.amount).map((l, i) => ({ position: i + 1, description: `${l.name}${l.rate != null ? ` @ ${l.rate.toFixed(4)}/min` : ""}`, quantity: round4(l.minutes), unitPrice: l.minutes > 0 ? round4(l.amount / l.minutes) : 0, amount: round2(l.amount), vatable: false }));
     const total = round2(lines.reduce((n, l) => n + l.amount, 0));
     const number = await nextInvoiceNumber(tx, unitId, "INVOICE", input.periodStart);
-    const fx = account.currency === "NGN" ? null : Number((await tx.setting.findUnique({ where: { key: "finance.usd_ngn_rate" } }))?.value ?? 1550);
+    const fx = account.currency === "NGN" ? null : await rateFor(account.currency);
     const inv = await tx.invoice.create({
       data: {
         number,
@@ -172,7 +177,7 @@ export async function recordVendorStatement(ctx: Ctx, raw: unknown) {
         periodStart: input.periodStart,
         periodEnd: input.periodEnd,
         currency: account.currency,
-        fxRate: account.currency === "NGN" ? null : Number((await tx.setting.findUnique({ where: { key: "finance.usd_ngn_rate" } }))?.value ?? 1550),
+        fxRate: account.currency === "NGN" ? null : await rateFor(account.currency),
         total: input.theirAmount,
         issueDate: input.issueDate,
         dueDate: dueDateFor(end, account.paymentTermDays),

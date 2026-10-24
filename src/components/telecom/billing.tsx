@@ -22,7 +22,7 @@ import { useAction } from "@/ui/use-action";
 type Acc = {
   id: string; carrier: string; side: string; currency: string; terms: string; paymentMode: string;
   cycle: { start: string; end: string; due: string };
-  unbilledEntries: number; unbilledMinutes: number; unbilledAmount: number;
+  unbilledEntries: number; unbilledMinutes: number; unbilledAmount: number; unbilledNgn: number; balanceNgn: number | null; exposureNgn: number | null;
   billed: { id: string; number: string | null } | null;
   balance: number | null; lowBalance: boolean; exposure: number | null; creditLimit: number | null; credit: string;
 };
@@ -66,9 +66,9 @@ export function AccountsTable({ rows, can }: { rows: Acc[]; can: { invoice: bool
                     <p className="text-2xs text-ink-3">{a.side === "VENDOR" ? "Vendor" : "Customer"} · {a.terms} · {humanize(a.paymentMode)} · {a.currency}</p>
                   </Td>
                   <Td className="whitespace-nowrap text-[12.5px]">{formatDay(a.cycle.start)} – {formatDay(a.cycle.end)}<p className="text-2xs text-ink-3">due {formatDay(a.cycle.due)}</p></Td>
-                  <Td align="right">{a.unbilledEntries ? <>{money(a.unbilledAmount, a.currency)}<p className="text-2xs text-ink-3">{num(a.unbilledMinutes)} min</p></> : <span className="text-ink-3">—</span>}</Td>
+                  <Td align="right">{a.unbilledEntries ? <>{money(a.unbilledAmount, a.currency)}<p className="text-2xs text-ink-3">{num(a.unbilledMinutes)} min{a.currency !== "NGN" && ` · ${money(a.unbilledNgn)}`}</p></> : <span className="text-ink-3">—</span>}</Td>
                   <Td align="right">
-                    {a.balance != null ? <span className={cn(a.lowBalance && "font-medium text-danger")}>{money(a.balance, a.currency)}</span> : a.exposure != null ? <>{money(a.exposure, a.currency)}{a.creditLimit != null && <p className="text-2xs text-ink-3">limit {money(a.creditLimit, a.currency, { compact: true })}</p>}</> : "—"}
+                    {a.balance != null ? <><span className={cn(a.lowBalance && "font-medium text-danger")}>{money(a.balance, a.currency)}</span>{a.currency !== "NGN" && a.balanceNgn != null && <p className="text-2xs text-ink-3">{money(a.balanceNgn)}</p>}</> : a.exposure != null ? <>{money(a.exposure, a.currency)}<p className="text-2xs text-ink-3">{a.currency !== "NGN" && a.exposureNgn != null && `${money(a.exposureNgn, "NGN", { compact: true })} · `}{a.creditLimit != null && `limit ${money(a.creditLimit, a.currency, { compact: true })}`}</p></> : "—"}
                   </Td>
                   <Td>
                     {a.billed ? <Link href={a.side === "CUSTOMER" ? `/money/invoices/${a.billed.id}` : "/money/bills"} className="text-[12.5px] text-accent hover:underline">{a.billed.number ?? "Billed"}</Link> : a.credit === "over" ? <Badge tone="danger">Over credit limit</Badge> : a.credit === "warning" ? <Badge tone="warning">80% of limit</Badge> : a.lowBalance ? <Badge tone="danger">Low balance</Badge> : <span className="text-2xs text-ink-3">Not billed</span>}

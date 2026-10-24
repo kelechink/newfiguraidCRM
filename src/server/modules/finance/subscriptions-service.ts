@@ -7,7 +7,7 @@ import { requireScope, type Ctx } from "@/server/authz/context";
 import { ForbiddenError, NotFoundError } from "@/server/authz/errors";
 import { db } from "@/server/db";
 import { notify } from "@/server/notify/notify";
-import { getSetting } from "@/server/modules/settings/service";
+import { currentRates } from "@/server/fx/rates";
 
 const id = z.string().cuid();
 const PER_MONTH: Record<Recurrence, number> = { WEEKLY: 52 / 12, MONTHLY: 1, QUARTERLY: 1 / 3, ANNUAL: 1 / 12 };
@@ -19,12 +19,13 @@ function subWhere(ctx: Ctx, action: "VIEW" | "CREATE" | "EDIT" | "DELETE") {
 }
 
 export async function listSubscriptions(ctx: Ctx) {
-  const usd = Number(await getSetting("finance.usd_ngn_rate"));
+  const rates = await currentRates();
   const rows = await db.subscription.findMany({ where: subWhere(ctx, "VIEW"), include: { owner: { select: { id: true, name: true } }, unit: { select: { code: true } } }, orderBy: [{ status: "asc" }, { renewalDate: "asc" }] });
   const norm = (v: string) => v.toLowerCase().replace(/[^a-z0-9]/g, "");
   const now = Date.now();
   const items = rows.map((s) => {
-    const monthly = Number(s.cost) * PER_MONTH[s.recurrence] * (s.currency === "NGN" ? 1 : usd);
+    const monthly = Number(s.cost) * PER_MONTH[s.recurrence] * rates[s.currency];
+    const nextChargeNgn = round2(Number(s.cost) * rates[s.currency]);
     const days = Math.ceil((s.renewalDate.getTime() - now) / 86_400_000);
     const unused = s.status === "ACTIVE" && (s.lastUsedAt ? now - s.lastUsedAt.getTime() > UNUSED_DAYS * 86_400_000 : now - s.createdAt.getTime() > UNUSED_DAYS * 86_400_000);
     const duplicate = rows.some((o) => o.id !== s.id && o.status === "ACTIVE" && s.status === "ACTIVE" && (norm(o.name) === norm(s.name) || (o.category && o.category === s.category && norm(o.vendor) === norm(s.vendor))));
@@ -46,6 +47,7 @@ export async function listSubscriptions(ctx: Ctx) {
       status: s.status,
       lastUsedAt: s.lastUsedAt?.toISOString() ?? null,
       monthlyNgn: round2(monthly),
+      nextChargeNgn,
       flags: [...(unused ? ["unused"] : []), ...(duplicate ? ["duplicate"] : [])],
       notes: s.notes,
     };

@@ -76,3 +76,6 @@ export async function saveDomainAction(input: unknown) {
 export async function addSupplierPriceAction(input: unknown) {
   return runAction((ctx) => r("/money/procurement")(addSupplierPrice(ctx, input)));
 }
+export async function setFxRateAction(input: unknown) {
+  return runAction((ctx) => r("/money", "/money/telecom")((async () => (await import("@/server/fx/rates")).setRate(ctx, input))()));
+}

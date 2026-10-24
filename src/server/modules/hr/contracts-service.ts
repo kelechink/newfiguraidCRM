@@ -61,10 +61,13 @@ async function mergeValues(tx: Tx, userId: string, extra: Partial<Record<MergeFi
   const r = policy ? toRule(policy) : null;
   const summary = r
     ? [
-        r.latenessMode === "FIXED" ? `Each late day: NGN ${r.fixedAmount?.toLocaleString("en-NG")}.` : `Lateness tiers: ${r.tiers.map((t) => `${t.fromMinutes}${t.toMinutes ? `-${t.toMinutes}` : "+"} min NGN ${t.amount.toLocaleString("en-NG")}`).join("; ")}.`,
+        r.latenessMode === "FIXED" ? `Each late arrival: NGN ${r.fixedAmount?.toLocaleString("en-NG")}.` : `Lateness tiers: ${r.tiers.map((t) => `${t.fromMinutes}${t.toMinutes ? `-${t.toMinutes}` : "+"} min NGN ${t.amount.toLocaleString("en-NG")}`).join("; ")}.`,
+        r.earlyLeaveAmount ? `Signing off before ${p.closeTime}: NGN ${r.earlyLeaveAmount.toLocaleString("en-NG")} per day.` : null,
         r.absenceMode === "DAILY_RATE" ? "Unexcused absence: one day's pay." : `Unexcused absence: NGN ${r.absenceAmount?.toLocaleString("en-NG")}.`,
         r.monthlyCapAmount != null || r.monthlyCapPct != null ? `Monthly cap: ${[r.monthlyCapAmount != null ? `NGN ${r.monthlyCapAmount.toLocaleString("en-NG")}` : null, r.monthlyCapPct != null ? `${r.monthlyCapPct}% of gross` : null].filter(Boolean).join(" or ")}, whichever is lower.` : null,
-        `Grace period: ${p.graceMinutes} minutes. Approved leave, excuses and public holidays are never deducted.`,
+        r.monthlyCapAmount == null && r.monthlyCapPct == null ? "There is no monthly limit on these deductions." : null,
+        p.graceMinutes > 0 ? `Grace period: ${p.graceMinutes} minutes.` : `Work starts at ${p.resumeTime}: arriving at any time after ${p.resumeTime} is late.`,
+        "Approved leave, approved excuses and public holidays are never deducted.",
       ].filter(Boolean).join(" ")
     : "As set out in the Attendance & Lateness Policy.";
   const d = (x: Date | null) => (x ? fmtDate(x) : "");

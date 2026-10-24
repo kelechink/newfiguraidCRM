@@ -55,8 +55,8 @@ export default async function TrafficPage({ searchParams }: { searchParams: Prom
                 <Td className="text-[12.5px]">{t.vendor} <span className="text-ink-3">→</span> {t.customer}</Td>
                 <Td align="right">{num(t.minutes, 1)}</Td>
                 <Td align="right" muted className="text-[12px]">{t.asr != null ? `${pct(t.asr, 0)} · ${t.acd ?? "—"}m` : "—"}</Td>
-                <Td align="right">{money(t.revenue, t.currency)}</Td>
-                {seeMargin && <Td align="right" className={cn("font-medium", (t.margin ?? 0) < 0 && "text-danger")}>{money(t.margin, t.currency)}</Td>}
+                <Td align="right">{money(t.revenue, t.currency)}{t.currency !== "NGN" && <p className="text-2xs text-ink-3">{money(t.revenueNgn)}</p>}</Td>
+                {seeMargin && <Td align="right" className={cn("font-medium", (t.margin ?? 0) < 0 && "text-danger")}>{money(t.margin, t.currency)}{t.currency !== "NGN" && t.marginNgn != null && <p className="text-2xs font-normal text-ink-3">{money(t.marginNgn)}</p>}</Td>}
                 <Td>{t.invoice ? <Link href={`/money/invoices/${t.invoice.id}`} className="font-mono text-2xs text-accent hover:underline">{t.invoice.number}</Link> : <span className="text-2xs text-ink-3">Unbilled</span>}</Td>
               </Tr>
             ))}

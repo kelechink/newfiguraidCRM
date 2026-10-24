@@ -5,7 +5,7 @@ import { formatDay, money } from "@/lib/format";
 import { can, scopeOf } from "@/server/authz/context";
 import { requireCtx } from "@/server/auth/session";
 import { bankAccounts, listPayments } from "@/server/modules/finance/money-service";
-import { getSetting } from "@/server/modules/settings/service";
+import { currentRates } from "@/server/fx/rates";
 import { currentUnit, listUnits } from "@/server/modules/shell/service";
 import { Badge } from "@/ui/badge";
 import { Card } from "@/ui/card";
@@ -19,14 +19,14 @@ export const metadata: Metadata = { title: "Income" };
 export default async function PaymentsPage() {
   const ctx = await requireCtx();
   const unit = await currentUnit();
-  const [rows, units, banks, usd] = await Promise.all([listPayments(ctx, { unitId: unit?.id ?? null }), listUnits(), bankAccounts(ctx), getSetting("finance.usd_ngn_rate")]);
+  const [rows, units, banks, usd] = await Promise.all([listPayments(ctx, { unitId: unit?.id ?? null }), listUnits(), bankAccounts(ctx), currentRates()]);
   const scope = scopeOf(ctx, "finance.income", "CREATE");
   const total = rows.reduce((n, p) => n + p.amountNgn, 0);
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-[13px] text-ink-3">{rows.length} payments · {money(total)} received. Paystack and WHMCS payments appear automatically once verified.</p>
-        {can(ctx, "finance.income", "CREATE") && <RecordIncomeButton units={units.filter((u) => scope === "ALL" || ctx.unitIds.includes(u.id)).map((u) => ({ id: u.id, name: u.name }))} banks={banks} defaultFx={Number(usd)} />}
+        {can(ctx, "finance.income", "CREATE") && <RecordIncomeButton units={units.filter((u) => scope === "ALL" || ctx.unitIds.includes(u.id)).map((u) => ({ id: u.id, name: u.name }))} banks={banks} rates={usd} />}
       </div>
       <Card padded={false}>
         <Table>

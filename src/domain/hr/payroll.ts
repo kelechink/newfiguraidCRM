@@ -13,6 +13,8 @@ export interface PolicyRule {
   latenessMode: "FIXED" | "TIERED";
   fixedAmount: number | null;
   tiers: Tier[];
+  /** Charge for signing off before close of work; null = not charged. */
+  earlyLeaveAmount?: number | null;
   absenceMode: "DAILY_RATE" | "FIXED";
   absenceAmount: number | null;
   monthlyCapAmount: number | null;
@@ -45,13 +47,14 @@ export interface DayFact {
   dayId?: string;
   status: "PRESENT" | "LATE" | "ABSENT" | "ON_LEAVE" | "HOLIDAY" | "WEEKEND" | "PENDING";
   minutesLate: number;
+  minutesEarly?: number;
   excused: boolean; // an approved excuse covers this day
 }
 
 export interface DeductionLine {
   date: string;
   dayId?: string;
-  type: "LATENESS" | "ABSENCE";
+  type: "LATENESS" | "EARLY_DEPARTURE" | "ABSENCE";
   amount: number;
   reason: string;
   status: "active" | "capped";
@@ -60,17 +63,23 @@ export interface DeductionLine {
 const dayLabel = (iso: string) => new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(`${iso}T12:00:00Z`));
 
 /**
- * Attendance deductions for a month. Leave, holidays, weekends and days with an approved
- * excuse are never charged; the monthly cap is applied in date order.
+ * Attendance deductions for a month. Late arrival and early sign-off are charged
+ * separately (a day can have both). Leave, holidays, weekends and days with an approved
+ * excuse are never charged; the monthly cap, if any, is applied in date order.
  */
 export function attendanceDeductions(input: { rule: PolicyRule; monthlyGross: number; workingDaysInMonth: number; days: DayFact[] }) {
   const { rule, monthlyGross, workingDaysInMonth } = input;
   const raw: DeductionLine[] = [];
   for (const d of [...input.days].sort((a, b) => a.date.localeCompare(b.date))) {
     if (d.excused) continue;
-    if (d.status === "LATE") {
-      const c = latenessCharge(rule, d.minutesLate);
-      if (c.amount > 0) raw.push({ date: d.date, dayId: d.dayId, type: "LATENESS", amount: c.amount, reason: `Late ${d.minutesLate} min on ${dayLabel(d.date)} (${c.label})`, status: "active" });
+    if (d.status === "LATE" || d.status === "PRESENT") {
+      if (d.status === "LATE") {
+        const c = latenessCharge(rule, d.minutesLate);
+        if (c.amount > 0) raw.push({ date: d.date, dayId: d.dayId, type: "LATENESS", amount: c.amount, reason: `Late ${d.minutesLate} min on ${dayLabel(d.date)} (${c.label})`, status: "active" });
+      }
+      if ((d.minutesEarly ?? 0) > 0 && rule.earlyLeaveAmount) {
+        raw.push({ date: d.date, dayId: d.dayId, type: "EARLY_DEPARTURE", amount: r2(rule.earlyLeaveAmount), reason: `Signed off ${d.minutesEarly} min before close on ${dayLabel(d.date)}`, status: "active" });
+      }
     } else if (d.status === "ABSENT") {
       const amount = absenceCharge(rule, monthlyGross, workingDaysInMonth);
       if (amount > 0) raw.push({ date: d.date, dayId: d.dayId, type: "ABSENCE", amount, reason: `Absent without approved leave or excuse on ${dayLabel(d.date)}`, status: "active" });
@@ -128,6 +137,8 @@ export function annualPaye(chargeable: number): number {
   return r2(tax);
 }
 
+export const ATTENDANCE_LINE = "Lateness, early sign-off & absence";
+
 export interface PayInput {
   base: number; // monthly basic
   allowances: { name: string; amount: number; pensionable?: boolean }[];
@@ -168,7 +179,7 @@ export function payslip(p: PayInput): Breakdown {
     ...(pension > 0 ? [{ name: `Pension (${p.statutory.pensionPct}%)`, amount: pension }] : []),
     ...(nhf > 0 ? [{ name: `NHF (${p.statutory.nhfPct}%)`, amount: nhf }] : []),
   ];
-  const deductions = [...(p.attendance > 0 ? [{ name: "Lateness & absence", amount: r2(p.attendance) }] : []), ...p.other.filter((o) => o.amount > 0).map((o) => ({ name: o.name, amount: r2(o.amount) }))];
+  const deductions = [...(p.attendance > 0 ? [{ name: ATTENDANCE_LINE, amount: r2(p.attendance) }] : []), ...p.other.filter((o) => o.amount > 0).map((o) => ({ name: o.name, amount: r2(o.amount) }))];
   const totalDeductions = r2(statutory.reduce((n, s) => n + s.amount, 0) + deductions.reduce((n, d) => n + d.amount, 0));
   return { base, allowances: allowances.map(({ name, amount }) => ({ name, amount })), bonuses, gross, statutory, deductions, totalDeductions, net: r2(Math.max(0, gross - totalDeductions)), proRata: k };
 }

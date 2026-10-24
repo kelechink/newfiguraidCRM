@@ -342,6 +342,11 @@ async function main() {
     }
   }
 
+  // Company attendance rule: 09:00–17:00 Mon–Fri, no grace; ₦500 late, ₦500 early sign-off, ₦3,000 unexcused absence, no cap
+  await db.latenessPolicy.create({ data: { name: "Figuraid attendance policy", latenessMode: "FIXED", fixedAmount: 500, earlyLeaveAmount: 500, absenceMode: "FIXED", absenceAmount: 3000, effectiveFrom: new Date("2026-01-01T00:00:00Z"), documentVersion: "ATTENDANCE_POLICY v1" } });
+  // starting exchange rates (Finance updates these, or the daily feed does)
+  for (const [currency, rate] of [["USD", 1550], ["EUR", 1680], ["GBP", 1960]] as const) await db.fxRate.create({ data: { currency, rateToNgn: rate, source: "manual" } });
+
   console.log(`Seeded ${PEOPLE.length} people, ${SOPS.length} SOPs, ${tasks.length} tasks.`);
   console.log(`Demo password for every account: ${DEMO_PASSWORD}`);
 }

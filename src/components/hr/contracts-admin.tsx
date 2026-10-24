@@ -90,17 +90,18 @@ export function TemplatesAdmin({ templates, canEdit }: { templates: Template[]; 
   );
 }
 
-type Policy = { id: string; name: string; unit: string; latenessMode: string; fixedAmount: number | null; tiers: { fromMinutes: number; toMinutes: number | null; amount: number }[]; absenceMode: string; absenceAmount: number | null; monthlyCapAmount: number | null; monthlyCapPct: number | null; effectiveFrom: string; pinnedStaff: number };
+type Policy = { id: string; name: string; unit: string; latenessMode: string; fixedAmount: number | null; earlyLeaveAmount?: number | null; tiers: { fromMinutes: number; toMinutes: number | null; amount: number }[]; absenceMode: string; absenceAmount: number | null; monthlyCapAmount: number | null; monthlyCapPct: number | null; effectiveFrom: string; pinnedStaff: number };
 
 export function PoliciesAdmin({ policies, units, canEdit }: { policies: Policy[]; units: { id: string; name: string }[]; canEdit: boolean }) {
   const [open, setOpen] = useState(false);
-  const [mode, setMode] = useState("TIERED");
-  const [absence, setAbsence] = useState("DAILY_RATE");
+  // defaults = Figuraid's rule: ₦500 per late arrival, ₦500 per early sign-off, ₦3,000 per unexcused absence, no cap
+  const [mode, setMode] = useState("FIXED");
+  const [absence, setAbsence] = useState("FIXED");
   const [tiers, setTiers] = useState([{ fromMinutes: "1", toMinutes: "15", amount: "500" }, { fromMinutes: "16", toMinutes: "30", amount: "1000" }, { fromMinutes: "31", toMinutes: "", amount: "2000" }]);
   const save = useAction(savePolicyAction, { success: "Policy saved", onSuccess: () => setOpen(false) });
   return (
     <Card padded={false}>
-      <CardHeader title="Lateness & absence policies" description="Applied automatically by payroll. Saving adds a new version from its effective date." className="px-4 pt-3" actions={canEdit && <Button size="sm" variant="primary" onClick={() => setOpen(true)}><Plus className="size-3.5" /> New version</Button>} />
+      <CardHeader title="Lateness, early sign-off & absence" description="Applied automatically by payroll. Saving adds a new version from its effective date." className="px-4 pt-3" actions={canEdit && <Button size="sm" variant="primary" onClick={() => setOpen(true)}><Plus className="size-3.5" /> New version</Button>} />
       <ul className="divide-y divide-line">
         {policies.length === 0 && <li className="px-4 py-3 text-[13px] text-ink-3">No policy yet — nobody is charged for lateness until you add one.</li>}
         {policies.map((p) => (
@@ -108,14 +109,16 @@ export function PoliciesAdmin({ policies, units, canEdit }: { policies: Policy[]
             <p className="flex flex-wrap items-center gap-2 font-medium">{p.name} <Badge>{p.unit}</Badge><span className="text-2xs font-normal text-ink-3">from {formatDay(p.effectiveFrom)}{p.pinnedStaff ? ` · pinned to ${p.pinnedStaff}` : ""}</span></p>
             <p className="text-[12.5px] text-ink-2">
               {p.latenessMode === "FIXED" ? `${money(p.fixedAmount ?? 0)} per late day` : p.tiers.map((t) => `${t.fromMinutes}${t.toMinutes ? `–${t.toMinutes}` : "+"} min ${money(t.amount)}`).join(" · ")}
+              {p.earlyLeaveAmount ? ` · early sign-off ${money(p.earlyLeaveAmount)}` : ""}
               {" · "}absence {p.absenceMode === "DAILY_RATE" ? "a day's pay" : money(p.absenceAmount ?? 0)}
+              {p.monthlyCapAmount == null && p.monthlyCapPct == null && " · no monthly cap"}
               {(p.monthlyCapAmount != null || p.monthlyCapPct != null) && ` · cap ${[p.monthlyCapAmount != null ? money(p.monthlyCapAmount) : null, p.monthlyCapPct != null ? `${p.monthlyCapPct}% of gross` : null].filter(Boolean).join(" or ")}`}
             </p>
           </li>
         ))}
       </ul>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent title="Lateness & absence policy" className="max-w-[620px]" footer={<><Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button><Button variant="primary" type="submit" form="pol" loading={save.pending}>Save</Button></>}>
+        <DialogContent title="Attendance deduction policy" className="max-w-[620px]" footer={<><Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button><Button variant="primary" type="submit" form="pol" loading={save.pending}>Save</Button></>}>
           <form
             id="pol"
             className="grid gap-4"
@@ -124,6 +127,7 @@ export function PoliciesAdmin({ policies, units, canEdit }: { policies: Policy[]
               unitId: f.get("unit") || null,
               latenessMode: mode,
               fixedAmount: mode === "FIXED" ? f.get("fixed") : null,
+              earlyLeaveAmount: f.get("early") || null,
               tiers: mode === "TIERED" ? tiers.filter((t) => t.fromMinutes && t.amount).map((t) => ({ fromMinutes: t.fromMinutes, toMinutes: t.toMinutes || null, amount: t.amount })) : [],
               absenceMode: absence,
               absenceAmount: absence === "FIXED" ? f.get("absAmt") : null,
@@ -134,10 +138,10 @@ export function PoliciesAdmin({ policies, units, canEdit }: { policies: Policy[]
             }))}
           >
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Name" htmlFor="po-name"><Input id="po-name" name="name" required defaultValue="Standard lateness policy" /></Field>
+              <Field label="Name" htmlFor="po-name"><Input id="po-name" name="name" required defaultValue="Figuraid attendance policy" /></Field>
               <Field label="Applies to" htmlFor="po-unit"><Select id="po-unit" name="unit" defaultValue=""><option value="">All units</option>{units.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}</Select></Field>
               <Field label="Lateness" htmlFor="po-mode"><Select id="po-mode" value={mode} onChange={(e) => setMode(e.target.value)}><option value="TIERED">Tiered by minutes late</option><option value="FIXED">Flat amount per late day</option></Select></Field>
-              {mode === "FIXED" ? <Field label="Per late day (₦)" htmlFor="po-fixed"><Input id="po-fixed" name="fixed" type="number" min={0} required /></Field> : <span />}
+              {mode === "FIXED" ? <Field label="Per late day (₦)" htmlFor="po-fixed"><Input id="po-fixed" name="fixed" type="number" min={0} defaultValue={500} required /></Field> : <span />}
             </div>
             {mode === "TIERED" && (
               <div className="grid gap-2">
@@ -154,8 +158,10 @@ export function PoliciesAdmin({ policies, units, canEdit }: { policies: Policy[]
             )}
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Unexcused absence" htmlFor="po-abs"><Select id="po-abs" value={absence} onChange={(e) => setAbsence(e.target.value)}><option value="DAILY_RATE">A day's pay (gross ÷ working days)</option><option value="FIXED">Fixed amount</option></Select></Field>
-              {absence === "FIXED" ? <Field label="Per absence (₦)" htmlFor="po-absamt"><Input id="po-absamt" name="absAmt" type="number" min={0} required /></Field> : <span />}
-              <Field label="Monthly cap (₦)" htmlFor="po-cap" hint="Optional"><Input id="po-cap" name="capAmt" type="number" min={0} /></Field>
+              {absence === "FIXED" ? <Field label="Per absence (₦)" htmlFor="po-absamt"><Input id="po-absamt" name="absAmt" type="number" min={0} defaultValue={3000} required /></Field> : <span />}
+              <Field label="Early sign-off (₦ per day)" htmlFor="po-early" hint="Leaving before close of work. Blank = not charged."><Input id="po-early" name="early" type="number" min={0} defaultValue={500} /></Field>
+              <span className="hidden sm:block" />
+              <Field label="Monthly cap (₦)" htmlFor="po-cap" hint="Optional — blank means no cap"><Input id="po-cap" name="capAmt" type="number" min={0} /></Field>
               <Field label="Monthly cap (% of gross)" htmlFor="po-capp" hint="The lower cap wins"><Input id="po-capp" name="capPct" type="number" min={0} max={100} step="0.1" /></Field>
               <Field label="Effective from" htmlFor="po-from"><Input id="po-from" name="from" type="date" defaultValue={localDate(new Date()).slice(0, 8) + "01"} required /></Field>
               <Field label="Signed policy version" htmlFor="po-doc" hint="Links to the attendance policy staff signed"><Input id="po-doc" name="doc" placeholder="e.g. ATTENDANCE_POLICY v2" /></Field>

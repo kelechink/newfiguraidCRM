@@ -1,7 +1,7 @@
 import "server-only";
 import type { Prisma } from "@prisma/client";
 import { z } from "zod";
-import { payslip, proRataFraction, workingDaysInMonth, type Breakdown } from "@/domain/hr/payroll";
+import { ATTENDANCE_LINE, payslip, proRataFraction, workingDaysInMonth, type Breakdown } from "@/domain/hr/payroll";
 import { localDate } from "@/domain/sop/schedule";
 import { audit } from "@/server/audit/audit";
 import { can, requireScope, type Ctx } from "@/server/authz/context";
@@ -45,7 +45,7 @@ async function buildSlip(tx: Tx, userId: string, m: string, adjustments: Adjustm
   if (fraction === 0) return null;
   await recomputeDeductions(tx, userId, m);
   const lines = await tx.deduction.findMany({ where: { userId, periodMonth: m, status: { not: "waived" }, payslipId: null } });
-  const attendance = lines.filter((l) => l.type === "LATENESS" || l.type === "ABSENCE");
+  const attendance = lines.filter((l) => l.type === "LATENESS" || l.type === "EARLY_DEPARTURE" || l.type === "ABSENCE");
   const manual = lines.filter((l) => l.type === "ADVANCE_REPAYMENT" || l.type === "OTHER");
   const { salary, allowances } = grossOf(profile);
   const breakdown = payslip({
@@ -264,7 +264,7 @@ export async function getRun(ctx: Ctx, runId: string) {
     approvedBy: run.approvedBy?.name ?? null,
     signedOffBy: run.signedOffBy?.name ?? null,
     paidAt: run.paidAt?.toISOString() ?? null,
-    totals: { gross: total("gross"), deductions: total("totalDeductions"), net, attendance: rows.reduce((n, r) => n + (r.breakdown.deductions.find((d) => d.name === "Lateness & absence")?.amount ?? 0), 0) },
+    totals: { gross: total("gross"), deductions: total("totalDeductions"), net, attendance: rows.reduce((n, r) => n + (r.breakdown.deductions.find((d) => d.name === ATTENDANCE_LINE)?.amount ?? 0), 0) },
     limit,
     needsSignoff: net > limit,
     rows,

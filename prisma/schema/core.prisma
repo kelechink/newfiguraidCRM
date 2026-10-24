@@ -101,6 +101,7 @@ model User {
 
   // HR
   staffProfile         StaffProfile?
+  fxRatesSet           FxRate[]       @relation("FxRateSetter")
   contractPacks        ContractPack[]
   exitCases            ExitCase[]     @relation("ExitStaff")
   exitCasesHandled     ExitCase[]     @relation("ExitHandler")

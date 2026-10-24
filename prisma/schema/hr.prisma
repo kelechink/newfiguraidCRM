@@ -38,7 +38,7 @@ model StaffProfile {
   resumeTime       String          @default("09:00") // HH:mm local
   closeTime        String          @default("17:00")
   workingDays      Int[]           @default([1, 2, 3, 4, 5]) // ISO weekday
-  graceMinutes     Int             @default(15)
+  graceMinutes     Int             @default(0) // company rule: any minute after resumption is late
   remoteAllowed    Boolean         @default(false)
   latenessPolicyId String?
   latenessPolicy   LatenessPolicy? @relation(fields: [latenessPolicyId], references: [id])
@@ -65,6 +65,7 @@ model LatenessPolicy {
   unit             BusinessUnit?  @relation(fields: [unitId], references: [id])
   latenessMode     LatenessMode   @default(FIXED)
   fixedAmount      Decimal?       @db.Decimal(18, 2) // ₦ per late day
+  earlyLeaveAmount Decimal?       @db.Decimal(18, 2) // ₦ per day signed off before close
   tiers            Json? // [{fromMinutes, toMinutes, amount}] when TIERED
   absenceMode      AbsenceMode    @default(DAILY_RATE)
   absenceAmount    Decimal?       @db.Decimal(18, 2)
@@ -78,6 +79,7 @@ model LatenessPolicy {
 
 enum DeductionType {
   LATENESS
+  EARLY_DEPARTURE
   ABSENCE
   ADVANCE_REPAYMENT
   OTHER

@@ -20,7 +20,7 @@ import { useAction } from "@/ui/use-action";
 type Sub = {
   id: string; name: string; vendor: string; category: string | null; unit: string; unitId: string; owner: { id: string; name: string } | null;
   cost: number; currency: string; recurrence: string; renewalDate: string; daysToRenewal: number; cardLast4: string | null; seats: number | null;
-  status: string; lastUsedAt: string | null; monthlyNgn: number; flags: string[]; notes: string | null;
+  status: string; lastUsedAt: string | null; monthlyNgn: number; nextChargeNgn: number; flags: string[]; notes: string | null;
 };
 
 export function SubscriptionsTable({ items, units, people, canEdit }: { items: Sub[]; units: { id: string; name: string }[]; people: { id: string; name: string }[]; canEdit: boolean }) {
@@ -52,7 +52,7 @@ export function SubscriptionsTable({ items, units, people, canEdit }: { items: S
                     {formatDay(s.renewalDate)}
                     {live && s.daysToRenewal >= 0 && s.daysToRenewal <= 30 && <span className="ml-1.5 text-2xs">in {s.daysToRenewal}d</span>}
                   </Td>
-                  <Td align="right">{money(s.cost, s.currency)}<span className="ml-1 text-2xs text-ink-3">/{humanize(s.recurrence).toLowerCase()}</span></Td>
+                  <Td align="right">{money(s.cost, s.currency)}<span className="ml-1 text-2xs text-ink-3">/{humanize(s.recurrence).toLowerCase()}</span>{s.currency !== "NGN" && <p className="text-2xs text-ink-3">{money(s.nextChargeNgn)} at today's rate</p>}</Td>
                   <Td align="right" className="font-medium">{live ? money(s.monthlyNgn) : "—"}</Td>
                   <Td>
                     <span className="flex flex-wrap items-center gap-1.5">

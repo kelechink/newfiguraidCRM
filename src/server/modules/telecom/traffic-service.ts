@@ -10,6 +10,7 @@ import { storeFile } from "@/server/files/upload";
 import { notify } from "@/server/notify/notify";
 import { getSetting } from "@/server/modules/settings/service";
 import { accountExposure } from "./carriers-service";
+import { currentRates, ngn } from "@/server/fx/rates";
 import { accountWhere, canSeeMargin } from "./scope";
 
 const id = z.string().cuid();
@@ -270,6 +271,7 @@ export async function listTraffic(ctx: Ctx, raw: unknown) {
   const f = Range.parse(raw);
   const acc = await accountWhere(ctx, "telecom.traffic", "VIEW");
   const seeMargin = canSeeMargin(ctx);
+  const rates = await currentRates();
   const rows = await db.trafficEntry.findMany({
     where: { AND: [{ periodStart: { gte: f.from, lt: f.to } }, f.routeId ? { routeId: f.routeId } : {}, f.accountId ? { OR: [{ vendorAccountId: f.accountId }, { customerAccountId: f.accountId }] } : {}, { customerAccount: acc }, { vendorAccount: acc }] },
     include: { route: { select: { destination: true, prefix: true, routeType: true } }, vendorAccount: { select: { carrier: { select: { name: true } } } }, customerAccount: { select: { carrier: { select: { name: true } } } }, invoice: { select: { id: true, number: true } } },
@@ -290,8 +292,10 @@ export async function listTraffic(ctx: Ctx, raw: unknown) {
       minutes: Number(t.customerBilledMinutes),
       revenue: Number(t.revenueAmount),
       currency: t.currency,
+      revenueNgn: ngn(Number(t.revenueAmount), t.currency, rates),
       cost: seeMargin ? m.cost : null,
       margin: seeMargin ? m.margin : null,
+      marginNgn: seeMargin ? ngn(m.margin, t.currency, rates) : null,
       marginPct: seeMargin ? m.marginPct : null,
       source: t.source,
       invoice: t.invoice,
@@ -305,27 +309,34 @@ export async function telecomSummary(ctx: Ctx, raw: unknown) {
   const acc = await accountWhere(ctx, "telecom.traffic", "VIEW");
   const seeMargin = canSeeMargin(ctx);
   const threshold = Number(await getSetting("telecom.margin_alert_pct"));
+  const rates = await currentRates();
   const rows = await db.trafficEntry.findMany({
     where: { AND: [{ periodStart: { gte: f.from, lt: f.to } }, { customerAccount: acc }, { vendorAccount: acc }] },
     select: { periodStart: true, routeId: true, route: { select: { destination: true, prefix: true } }, customerAccount: { select: { carrier: { select: { name: true } } } }, vendorAccount: { select: { carrier: { select: { name: true } } } }, customerBilledMinutes: true, revenueAmount: true, costAmount: true, currency: true, calls: true, connectedCalls: true, rawSeconds: true },
   });
   type Agg = { minutes: number; revenue: number; cost: number; calls: number; connected: number; raw: number };
   const blank = (): Agg => ({ minutes: 0, revenue: 0, cost: 0, calls: 0, connected: 0, raw: 0 });
+  // carriers bill in USD, EUR and naira: aggregate in naira at today's rates so totals are real
   const add = (a: Agg, t: (typeof rows)[number]) => {
     a.minutes += Number(t.customerBilledMinutes);
-    a.revenue += Number(t.revenueAmount);
-    a.cost += Number(t.costAmount);
+    a.revenue += ngn(Number(t.revenueAmount), t.currency, rates);
+    a.cost += ngn(Number(t.costAmount), t.currency, rates);
     a.calls += t.calls ?? 0;
     a.connected += t.connectedCalls ?? t.calls ?? 0;
     a.raw += t.rawSeconds;
   };
   const total = blank();
+  const byCurrency = new Map<string, { revenue: number; cost: number; minutes: number }>();
   const byDay = new Map<string, Agg>();
   const byRoute = new Map<string, Agg & { name: string }>();
   const byCustomer = new Map<string, Agg>();
   const byVendor = new Map<string, Agg>();
   for (const t of rows) {
     add(total, t);
+    const c = byCurrency.get(t.currency) ?? byCurrency.set(t.currency, { revenue: 0, cost: 0, minutes: 0 }).get(t.currency)!;
+    c.revenue += Number(t.revenueAmount);
+    c.cost += Number(t.costAmount);
+    c.minutes += Number(t.customerBilledMinutes);
     const d = t.periodStart.toISOString().slice(0, 10);
     add(byDay.get(d) ?? byDay.set(d, blank()).get(d)!, t);
     add(byRoute.get(t.routeId) ?? byRoute.set(t.routeId, { ...blank(), name: `${t.route.destination} (${t.route.prefix})` }).get(t.routeId)!, t);
@@ -339,8 +350,10 @@ export async function telecomSummary(ctx: Ctx, raw: unknown) {
   const days: string[] = [];
   for (let d = new Date(f.from); d < f.to; d = new Date(d.getTime() + 86_400_000)) days.push(d.toISOString().slice(0, 10));
   return {
-    currency: rows[0]?.currency ?? "USD",
+    currency: "NGN",
+    rates,
     seeMargin,
+    byCurrency: [...byCurrency.entries()].map(([currency, v]) => ({ currency, minutes: round4(v.minutes), revenue: round4(v.revenue), cost: seeMargin ? round4(v.cost) : null, margin: seeMargin ? round4(v.revenue - v.cost) : null, rate: rates[currency as keyof typeof rates] })),
     total: view(total),
     byDay: days.map((d) => ({ day: d, ...view(byDay.get(d) ?? blank()) })),
     byRoute: [...byRoute.entries()].map(([routeId, a]) => ({ routeId, name: a.name, ...view(a) })).sort((a, b) => b.minutes - a.minutes),
