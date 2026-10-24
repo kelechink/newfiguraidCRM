@@ -56,9 +56,9 @@ export interface Series {
 }
 
 type Format = "money" | "number" | "minutes";
-const fmt = (v: number, f: Format, compact = false) => (f === "money" ? money(v, "NGN", { compact }) : f === "minutes" ? `${num(v)} min` : num(v));
+const fmt = (v: number, f: Format, compact = false, currency = "NGN") => (f === "money" ? money(v, currency, { compact }) : f === "minutes" ? `${num(v)} min` : num(v));
 
-function ChartTooltip({ active, payload, label, series, format, colors }: TooltipProps<number, string> & { series: Series[]; format: Format; colors: Record<string, string> }) {
+function ChartTooltip({ active, payload, label, series, format, colors, currency }: TooltipProps<number, string> & { series: Series[]; format: Format; colors: Record<string, string>; currency: string }) {
   if (!active || !payload?.length) return null;
   return (
     <div className="min-w-[180px] rounded-lg border border-line bg-surface px-3 py-2 shadow-lift">
@@ -70,7 +70,7 @@ function ChartTooltip({ active, payload, label, series, format, colors }: Toolti
           <p key={s.key} className="flex items-center gap-2 text-[12px]">
             <span className="inline-block h-0.5 w-3 rounded-full" style={{ background: colors[s.token] }} />
             <span className="flex-1 text-ink-2">{s.label}</span>
-            <span className="font-medium tabular text-ink">{fmt(Number(p.value), format)}</span>
+            <span className="font-medium tabular text-ink">{fmt(Number(p.value), format, false, currency)}</span>
           </p>
         );
       })}
@@ -101,6 +101,7 @@ export function TrendChart({
   reference,
   stackedBars,
   toolbar,
+  currency = "NGN",
 }: {
   data: Record<string, string | number | null>[];
   xKey: string;
@@ -110,6 +111,7 @@ export function TrendChart({
   reference?: { value: number; label: string };
   stackedBars?: boolean;
   toolbar?: React.ReactNode;
+  currency?: string;
 }) {
   const [asTable, setAsTable] = useState(false);
   const colors = useTokens(useMemo(() => [...new Set([...series.map((s) => s.token), "chart-grid", "ink-3", "danger", "surface"])], [series]));
@@ -148,7 +150,7 @@ export function TrendChart({
                 <tr key={i} className="border-b border-line last:border-0">
                   <td className="py-1.5 pr-3 text-ink-2">{row[xKey]}</td>
                   {series.map((s) => (
-                    <td key={s.key} className="py-1.5 pr-3 text-right tabular">{row[s.key] == null ? "—" : fmt(Number(row[s.key]), format)}</td>
+                    <td key={s.key} className="py-1.5 pr-3 text-right tabular">{row[s.key] == null ? "—" : fmt(Number(row[s.key]), format, false, currency)}</td>
                   ))}
                 </tr>
               ))}
@@ -162,8 +164,8 @@ export function TrendChart({
               <ComposedChart data={data} margin={{ top: 6, right: 8, bottom: 0, left: 4 }} barCategoryGap="30%">
                 <CartesianGrid vertical={false} stroke={colors["chart-grid"]} strokeWidth={1} />
                 <XAxis dataKey={xKey} tickLine={false} axisLine={{ stroke: colors["chart-grid"] }} tick={{ fill: colors["ink-3"], fontSize: 11 }} tickMargin={8} minTickGap={12} />
-                <YAxis tickLine={false} axisLine={false} tick={{ fill: colors["ink-3"], fontSize: 11 }} width={56} tickFormatter={(v: number) => fmt(v, format, true)} />
-                <Tooltip cursor={{ stroke: colors["ink-3"], strokeWidth: 1 }} content={<ChartTooltip series={series} format={format} colors={colors} />} />
+                <YAxis tickLine={false} axisLine={false} tick={{ fill: colors["ink-3"], fontSize: 11 }} width={56} tickFormatter={(v: number) => fmt(v, format, true, currency)} />
+                <Tooltip cursor={{ stroke: colors["ink-3"], strokeWidth: 1 }} content={<ChartTooltip series={series} format={format} colors={colors} currency={currency} />} />
                 {reference && <ReferenceLine y={reference.value} stroke={colors.danger} strokeDasharray="0" strokeWidth={1} label={{ value: reference.label, fill: colors["ink-3"], fontSize: 10, position: "insideTopLeft" }} />}
                 {series.map((s) =>
                   s.kind === "bar" ? (

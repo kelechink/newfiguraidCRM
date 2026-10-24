@@ -54,3 +54,12 @@ registerSearch(async (ctx, q) => {
   });
   return rows.map((i) => ({ id: i.id, kind: i.kind === "QUOTE" ? "Quote" : "Invoice", title: i.number, subtitle: `${i.company?.name ?? i.contact?.displayName ?? ""} · ${i.status.replace("_", " ").toLowerCase()}`, href: `/money/invoices/${i.id}` }));
 });
+
+// ── Telecom ──
+import { carrierWhere } from "@/server/modules/telecom/scope";
+
+registerSearch(async (ctx, q) => {
+  if (!scopeOf(ctx, "telecom.carriers", "VIEW")) return [];
+  const rows = await db.carrier.findMany({ where: { AND: [await carrierWhere(ctx, "telecom.carriers", "VIEW"), { OR: [{ name: contains(q) }, { legalName: contains(q) }] }] }, take: 5, orderBy: { name: "asc" } });
+  return rows.map((c) => ({ id: c.id, kind: "Carrier", title: c.name, subtitle: c.type.toLowerCase(), href: `/money/telecom/carriers/${c.id}` }));
+});
