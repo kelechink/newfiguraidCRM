@@ -63,3 +63,14 @@ Route::get('/unsubscribe/{contact}', function (\App\Models\Contact $contact) {
 
     return view('public.unsubscribed');
 })->middleware('signed')->name('unsubscribe');
+
+// Payslip PDF: your own, or anyone's if you can view payroll.
+Route::get('/payslips/{payslip}.pdf', function (\App\Models\Payslip $payslip) {
+    $u = auth()->user();
+    $run = $payslip->payrollRun;
+    abort_unless($u->id === $payslip->user_id && in_array($run->status, ['signed_off', 'paid'], true) || \App\Authz\Access::can($u, 'payroll', 'view'), 403);
+    \App\Models\AuditLog::record('payslip_downloaded', $payslip);
+    $html = view('pdf.payslip', ['b' => $payslip->breakdown, 'user' => $payslip->user, 'month' => \Carbon\Carbon::parse($run->period_month.'-01')->format('F Y')])->render();
+
+    return response(\Barryvdh\DomPDF\Facade\Pdf::loadHTML($html)->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'attachment; filename="payslip-'.$run->period_month.'.pdf"', 'Cache-Control' => 'private, no-store']);
+})->middleware('auth')->name('payslip.pdf');

@@ -27,9 +27,10 @@ class PayrollService
         $holidays = PublicHoliday::where('date', 'like', "$month%")->pluck('date')->map(fn ($d) => substr((string) $d, 0, 10))->all();
         $gross = $net = 0;
         $count = 0;
-        DB::transaction(function () use ($run, $month, $att, $holidays, &$gross, &$net, &$count) {
+        $emp = ['pension' => 0.0, 'nsitf' => 0.0, 'itf' => 0.0, 'paye' => 0.0, 'employee_pension' => 0.0, 'nhf' => 0.0];
+        DB::transaction(function () use ($run, $month, $att, $holidays, &$gross, &$net, &$count, &$emp) {
             $run->payslips()->delete();
-            User::whereIn('status', ['active', 'onboarding'])->whereHas('staffProfile')->with('staffProfile')->each(function (User $u) use ($run, $month, $att, $holidays, &$gross, &$net, &$count) {
+            User::whereIn('status', ['active', 'onboarding'])->whereHas('staffProfile')->with('staffProfile')->each(function (User $u) use ($run, $month, $att, $holidays, &$gross, &$net, &$count, &$emp) {
                 $p = $u->staffProfile;
                 if (! $p->salary) {
                     return;
@@ -44,13 +45,29 @@ class PayrollService
                     'attendance' => $attendance, 'other' => $other, 'paye' => (bool) Setting::get('payroll.paye', true),
                     'pension_pct' => (float) Setting::get('payroll.pension_pct', 8), 'nhf_pct' => (float) Setting::get('payroll.nhf_pct', 0), 'pro_rata' => $k,
                 ]);
+                // Employer-side statutory costs (not deducted from staff): pension 10% of basic+housing+transport, NSITF 1%, ITF 1% of gross.
+                $pensionable = $b['base'] + collect($b['allowances'])->filter(fn ($a) => preg_match('/housing|transport/i', $a['name']))->sum('amount');
+                $b['employer'] = [
+                    'pension' => round($pensionable * (float) Setting::get('payroll.employer_pension_pct', 10) / 100, 2),
+                    'nsitf' => (bool) Setting::get('payroll.nsitf', true) ? round($b['gross'] * 0.01, 2) : 0,
+                    'itf' => (bool) Setting::get('payroll.itf', true) ? round($b['gross'] * 0.01, 2) : 0,
+                ];
+                foreach (['pension', 'nsitf', 'itf'] as $k) {
+                    $emp[$k] += $b['employer'][$k];
+                }
+                foreach ($b['statutory'] as $st) {
+                    $key = str_starts_with($st['name'], 'PAYE') ? 'paye' : (str_starts_with($st['name'], 'Pension') ? 'employee_pension' : 'nhf');
+                    $emp[$key] += $st['amount'];
+                }
                 $slip = Payslip::create(['payroll_run_id' => $run->id, 'user_id' => $u->id, 'breakdown' => $b, 'net_pay' => (string) $b['net']]);
                 Deduction::where('user_id', $u->id)->where('period_month', $month)->where('status', '!=', 'waived')->update(['payslip_id' => $slip->id]);
                 $gross += $b['gross'];
                 $net += $b['net'];
                 $count++;
             });
-            $run->forceFill(['status' => 'in_review', 'total_gross' => (string) round($gross, 2), 'total_net' => (string) round($net, 2), 'staff_count' => $count])->save();
+            $emp = array_map(fn ($v) => round($v, 2), $emp);
+            $emp['total_employer_cost'] = round($gross + $emp['pension'] + $emp['nsitf'] + $emp['itf'], 2);
+            $run->forceFill(['status' => 'in_review', 'total_gross' => (string) round($gross, 2), 'total_net' => (string) round($net, 2), 'staff_count' => $count, 'employer_costs' => $emp])->save();
         });
 
         return $run->fresh();
@@ -66,6 +83,13 @@ class PayrollService
         }
         $run->forceFill(['status' => 'approved', 'approved_by_id' => $by->id, 'approved_at' => now()])->save();
         AttendanceDay::where('date', 'like', "$run->period_month%")->update(['payroll_locked_at' => now()]);
+        // Remittance schedule: what must be paid to FCT-IRS, PFAs, NSITF and ITF for this month.
+        $e = $run->employer_costs ?? [];
+        foreach (['paye' => $e['paye'] ?? 0, 'pension' => ($e['employee_pension'] ?? 0) + ($e['pension'] ?? 0), 'nhf' => $e['nhf'] ?? 0, 'nsitf' => $e['nsitf'] ?? 0, 'itf' => $e['itf'] ?? 0] as $kind => $amount) {
+            if ($amount > 0) {
+                \App\Models\TaxRecord::updateOrCreate(['kind' => $kind, 'period_month' => $run->period_month, 'direction' => 'payable'], ['amount' => $amount, 'status' => 'open']);
+            }
+        }
     }
 
     public function signOff(PayrollRun $run, User $by): void
@@ -74,5 +98,8 @@ class PayrollService
             throw new RuntimeException('Payroll must be approved first.');
         }
         $run->forceFill(['status' => 'signed_off', 'signed_off_by_id' => $by->id, 'signed_off_at' => now()])->save();
+        foreach ($run->payslips()->with('user')->get() as $slip) {
+            $slip->user?->notify(new \App\Notifications\Alert('Your payslip is ready', 'Payslip for '.\Carbon\CarbonImmutable::parse($run->period_month.'-01')->format('F Y').' is available.', '/app/my-payslips'));
+        }
     }
 }
