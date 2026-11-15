@@ -1,0 +1,11 @@
+---
+# cPanel → Git Version Control → "Deploy HEAD Commit" runs these in the repository folder.
+# Assumes the repo is cloned to ~/figuraid-os and figuraid.com's document root is ~/figuraid-os/public.
+deployment:
+  tasks:
+    - export DEPLOYPATH=$HOME/figuraid-os
+    - cd $DEPLOYPATH && (command -v composer >/dev/null && composer install --no-dev --optimize-autoloader --no-interaction || php $HOME/composer.phar install --no-dev --optimize-autoloader --no-interaction)
+    - cd $DEPLOYPATH && php artisan migrate --force
+    - cd $DEPLOYPATH && php artisan db:seed --class=CoreSeeder --force
+    - cd $DEPLOYPATH && php artisan optimize:clear && php artisan optimize && php artisan filament:optimize
+    - cd $DEPLOYPATH && php artisan queue:restart

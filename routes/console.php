@@ -95,3 +95,14 @@ Schedule::command('ops:daily')->dailyAt('07:00');
 Schedule::command('leads:retention')->dailyAt('02:00');
 Schedule::command('backup:run')->dailyAt('01:30');
 Schedule::command('audit:verify')->weeklyOn(1, '03:00');
+
+Artisan::command('fos:admin {email} {name}', function (string $email, string $name) {
+    $password = $this->secret('Password (min 10 characters, letters and numbers)');
+    $v = \Illuminate\Support\Facades\Validator::make(['password' => $password], ['password' => ['required', \Illuminate\Validation\Rules\Password::defaults()]]);
+    if ($v->fails()) {
+        return $this->error($v->errors()->first());
+    }
+    $u = User::updateOrCreate(['email' => strtolower($email)], ['name' => $name, 'password' => $password, 'status' => 'active', 'role_id' => \App\Models\Role::where('key', 'super_admin')->value('id'), 'primary_unit_id' => \App\Models\BusinessUnit::where('code', 'TELECOM')->value('id')]);
+    $u->forceFill(['email_verified_at' => now(), 'contract_signed_at' => now()])->save();
+    $this->info("Super Admin ready: {$u->email}. Sign in at /app — you will be asked to set up two-factor authentication.");
+})->purpose('Create or reset the first Super Admin');
