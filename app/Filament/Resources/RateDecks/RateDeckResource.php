@@ -34,6 +34,14 @@ class RateDeckResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
+    /** Vendor buy rates are sensitive: only holders of telecom.buy_rates see buy decks. */
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        $q = \App\Authz\Access::scopeQuery(parent::getEloquentQuery(), auth()->user(), static::$module, static::$ownColumns, static::$unitColumn);
+
+        return \App\Authz\Access::can(auth()->user(), 'telecom.buy_rates') ? $q : $q->where('direction', 'sell');
+    }
+
     public static function form(Schema $schema): Schema
     {
         return RateDeckForm::configure($schema);

@@ -2,51 +2,42 @@
 
 namespace App\Filament\Resources\Users\Schemas;
 
+use App\Authz\Access;
+use App\Models\Role;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Textarea;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Validation\Rules\Password;
 
 class UserForm
 {
     public static function configure(Schema $schema): Schema
     {
-        return $schema
-            ->components([
-                TextInput::make('name')
-                    ->required(),
-                TextInput::make('email')
-                    ->label('Email address')
-                    ->email()
-                    ->required(),
-                TextInput::make('phone')
-                    ->tel()
-                    ->default(null),
-                TextInput::make('password')
-                    ->password()
-                    ->required(),
-                TextInput::make('status')
-                    ->required()
-                    ->default('invited'),
-                Select::make('role_id')
-                    ->relationship('role', 'name')
-                    ->required(),
-                Select::make('primary_unit_id')
-                    ->relationship('primaryUnit', 'name'),
-                TextInput::make('avatar_path')
-                    ->default(null),
-                Textarea::make('ip_allowlist')
-                    ->default(null)
-                    ->columnSpanFull(),
-                TextInput::make('quiet_hours')
-                    ->default(null),
+        return $schema->columns(2)->components([
+            Section::make('Account')->columns(2)->schema([
+                TextInput::make('name')->required()->maxLength(120),
+                TextInput::make('email')->email()->required()->unique(ignoreRecord: true),
+                TextInput::make('phone')->tel(),
                 DatePicker::make('birthday'),
-                DateTimePicker::make('access_expires_at'),
-                DateTimePicker::make('contract_signed_at'),
-                TextInput::make('privacy_policy_version')
-                    ->default(null),
-            ]);
+                TextInput::make('password')->password()->revealable()->rule(Password::defaults())
+                    ->required(fn (string $operation) => $operation === 'create')->dehydrated(fn ($state) => filled($state))
+                    ->helperText('Leave blank to keep the current password.'),
+                Select::make('status')->options(['invited' => 'Invited', 'onboarding' => 'Onboarding (contract pack first)', 'active' => 'Active', 'suspended' => 'Suspended', 'exited' => 'Exited'])->default('onboarding')->required(),
+            ]),
+            Section::make('Access')->columns(2)->schema([
+                // Only a Super Admin may hand out roles holding sensitive permissions (PRD §3).
+                Select::make('role_id')->label('Role')->required()
+                    ->options(fn () => Role::query()->when(! auth()->user()?->isRole('super_admin'), fn ($q) => $q->whereNotIn('key', ['super_admin', 'admin', 'finance', 'auditor']))->pluck('name', 'id')),
+                Select::make('primary_unit_id')->relationship('primaryUnit', 'name')->required(),
+                Select::make('units')->relationship('units', 'name')->multiple()->preload()->label('Also works in'),
+                DateTimePicker::make('access_expires_at')->helperText('Required for external auditors.'),
+                TagsInput::make('ip_allowlist')->label('Allowed IPs / ranges')->placeholder('e.g. 102.89.0.0/16')->visible(fn () => Access::can(auth()->user(), 'roles', 'edit')),
+                TagsInput::make('quiet_hours')->label('Quiet hours (from, to)')->placeholder('22:00'),
+            ]),
+        ]);
     }
 }

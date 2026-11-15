@@ -68,6 +68,7 @@ class TrafficEntryResource extends Resource
                     ->numeric()
                     ->default(null),
                 TextInput::make('buy_rate')
+                    ->visible(fn () => \App\Authz\Access::can(auth()->user(), 'telecom.margins'))
                     ->numeric()
                     ->default(null),
                 TextInput::make('currency')
@@ -78,6 +79,7 @@ class TrafficEntryResource extends Resource
                     ->numeric()
                     ->default(0.0),
                 TextInput::make('cost')
+                    ->visible(fn () => \App\Authz\Access::can(auth()->user(), 'telecom.margins'))
                     ->required()
                     ->numeric()
                     ->default(0.0)
@@ -101,6 +103,7 @@ class TrafficEntryResource extends Resource
                 TextColumn::make('customerCarrier.name')
                     ->searchable(),
                 TextColumn::make('vendorCarrier.name')
+                    ->visible(fn () => \App\Authz\Access::can(auth()->user(), 'telecom.margins'))
                     ->searchable(),
                 TextColumn::make('destination')
                     ->searchable(),
@@ -121,6 +124,7 @@ class TrafficEntryResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('buy_rate')
+                    ->visible(fn () => \App\Authz\Access::can(auth()->user(), 'telecom.margins'))
                     ->numeric()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -132,6 +136,7 @@ class TrafficEntryResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('cost')
+                    ->visible(fn () => \App\Authz\Access::can(auth()->user(), 'telecom.margins'))
                     ->money()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

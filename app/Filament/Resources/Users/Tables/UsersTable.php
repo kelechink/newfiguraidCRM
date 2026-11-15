@@ -82,11 +82,12 @@ class UsersTable
             ])
             ->recordActions([
                 EditAction::make(),
+                \Filament\Actions\Action::make('signOut')->label('Sign out all devices')->icon('heroicon-o-arrow-left-on-rectangle')->requiresConfirmation()
+                    ->visible(fn () => auth()->user()->canDo('settings', 'edit'))->action(fn ($record) => \App\Services\Offboarding::signOutEverywhere($record)),
+                \Filament\Actions\Action::make('revoke')->label('Revoke access now')->color('danger')->icon('heroicon-o-no-symbol')->requiresConfirmation()
+                    ->visible(fn ($record) => auth()->user()->canDo('settings', 'edit') && $record->status !== 'exited' && $record->id !== auth()->id())
+                    ->action(fn ($record) => \App\Services\Offboarding::revoke($record)),
             ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
-            ]);
+            ->toolbarActions([]);
     }
 }
