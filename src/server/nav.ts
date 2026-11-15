@@ -21,7 +21,7 @@ const NAV: { label: string; items: Def[] }[] = [
   {
     label: "Work",
     items: [
-      { href: "/", label: "Home", icon: "home", any: [["dashboard.today", "VIEW"], ["dashboard.admin", "VIEW"]], keywords: "dashboard command centre today" },
+      { href: "/home", label: "Home", icon: "home", any: [["dashboard.today", "VIEW"], ["dashboard.admin", "VIEW"]], keywords: "dashboard command centre today" },
       { href: "/work/tasks", label: "Tasks", icon: "tasks", any: [["tasks", "VIEW"]], keywords: "board kanban todo" },
       { href: "/work/sops", label: "SOP templates", icon: "sops", any: [["sops", "VIEW"]], keywords: "procedures checklist" },
       { href: "/work/targets", label: "Targets & reports", icon: "targets", any: [["targets", "VIEW"], ["reports.daily", "VIEW"]], keywords: "scorecard end of day leaderboard" },

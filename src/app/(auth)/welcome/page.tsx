@@ -1,3 +1,4 @@
+import { APP_HOME } from "@/lib/routes";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AcceptPolicy } from "@/components/account/accept-policy";
@@ -11,7 +12,7 @@ export default async function WelcomePage() {
   const ctx = await getCtx();
   if (!ctx) redirect("/login");
   const policy = await pendingStaffPolicy(ctx.userId);
-  if (!policy) redirect("/");
+  if (!policy) redirect(APP_HOME);
   return (
     <AuthFrame wide title={`Welcome, ${ctx.name.split(" ")[0]}`} subtitle={`Before you start, please read and accept ${policy.title} (version ${policy.version}).`}>
       <div className="scrollbar-thin mt-6 max-h-[52vh] overflow-y-auto rounded-xl border border-line bg-surface p-5">

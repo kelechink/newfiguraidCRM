@@ -1,7 +1,8 @@
 import "server-only";
 import type { ContractKind, Prisma } from "@prisma/client";
 import { z } from "zod";
-import { contentHash, namesMatch, renderTemplate, unknownFields, type MergeField } from "@/domain/hr/merge";
+import { contentHash } from "@/domain/hr/content-hash";
+import { namesMatch, renderTemplate, unknownFields, type MergeField } from "@/domain/hr/merge";
 import { audit } from "@/server/audit/audit";
 import { can, requireScope, type Ctx } from "@/server/authz/context";
 import { ForbiddenError, NotFoundError, RuleError } from "@/server/authz/errors";

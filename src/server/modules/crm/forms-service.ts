@@ -87,6 +87,8 @@ export async function publicForm(slug: string) {
 }
 
 export interface SubmitMeta {
+  /** Terms and privacy acceptance shown on the form (PRD v3 §11a): stored with the submission. */
+  terms?: { termsVersion: string | null; privacyVersion: string | null; acceptedAt: string };
   ip: string | null;
   userAgent: string | null;
   utm: { source?: string; medium?: string; campaign?: string; content?: string };
@@ -145,7 +147,7 @@ export async function submitForm(slug: string, values: Record<string, string>, c
     });
     await tx.contact.update({ where: { id: contact.id }, data: { lastActivityAt: new Date() } });
     await tx.formSubmission.create({
-      data: { formId: form.id, contactId: contact.id, data: clean, ip: meta.ip, userAgent: meta.userAgent, utm: meta.utm },
+      data: { formId: form.id, contactId: contact.id, data: meta.terms ? { ...clean, _accepted: meta.terms } : clean, ip: meta.ip, userAgent: meta.userAgent, utm: meta.utm },
     });
     await tx.activity.create({
       data: {

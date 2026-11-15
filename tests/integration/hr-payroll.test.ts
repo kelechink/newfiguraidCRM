@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { contentHash } from "@/domain/hr/merge";
+import { contentHash } from "@/domain/hr/content-hash";
 import { can } from "@/server/authz/context";
 import { ForbiddenError, RuleError } from "@/server/authz/errors";
 import { decryptJson } from "@/server/crypto/field";

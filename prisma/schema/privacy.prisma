@@ -1,6 +1,7 @@
 // ─── Privacy & data protection (NDPA 2023) ────────────────────────────────────
 
 enum PolicyKind {
+  TERMS // website terms and conditions
   STAFF_PRIVACY
   PUBLIC_PRIVACY
   WEBCHAT_NOTICE

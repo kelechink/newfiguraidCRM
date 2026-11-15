@@ -17,7 +17,7 @@ export interface NavGroup {
 }
 
 function isActive(pathname: string, href: string) {
-  if (href === "/") return pathname === "/";
+  if (href === "/home") return pathname === "/home";
   if (href === "/money") return pathname === "/money" || /^\/money\/(payments|expenses|bills|cashflow|reports)/.test(pathname);
   return pathname === href || pathname.startsWith(`${href}/`);
 }

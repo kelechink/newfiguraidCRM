@@ -1,5 +1,6 @@
 "use client";
 
+import { APP_HOME } from "@/lib/routes";
 import { Copy, Laptop, LogOut, ShieldAlert, ShieldCheck, Smartphone } from "lucide-react";
 import { useState } from "react";
 import { ago } from "@/lib/format";
@@ -54,7 +55,7 @@ function TwoFactor({ has2fa, required, mustEnroll }: { has2fa: boolean; required
           <Button variant="secondary" onClick={() => navigator.clipboard.writeText(codes.join("\n"))}>
             <Copy className="size-3.5" /> Copy
           </Button>
-          <Button variant="primary" onClick={() => window.location.assign("/")}>
+          <Button variant="primary" onClick={() => window.location.assign(APP_HOME)}>
             I've saved them
           </Button>
         </div>

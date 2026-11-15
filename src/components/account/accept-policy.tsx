@@ -1,5 +1,6 @@
 "use client";
 
+import { APP_HOME } from "@/lib/routes";
 import { useState } from "react";
 import { acceptPolicyAction } from "@/server/modules/account/actions";
 import { Button } from "@/ui/button";
@@ -8,7 +9,7 @@ import { ToastProvider } from "@/ui/toast";
 
 function Inner({ policyId }: { policyId: string }) {
   const [checked, setChecked] = useState(false);
-  const { run, pending } = useAction(acceptPolicyAction, { onSuccess: () => window.location.assign("/") });
+  const { run, pending } = useAction(acceptPolicyAction, { onSuccess: () => window.location.assign(APP_HOME) });
   return (
     <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <label className="flex cursor-pointer items-center gap-2 text-[13px]">

@@ -1,5 +1,7 @@
 "use client";
 
+import { APP_HOME } from "@/lib/routes";
+
 import { ShieldCheck } from "lucide-react";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
@@ -10,7 +12,7 @@ import { Field, Input } from "@/ui/field";
 
 function safeNext(next: string | null): string {
   // only same-site relative paths — never an open redirect
-  return next && next.startsWith("/") && !next.startsWith("//") ? next : "/";
+  return next && next.startsWith("/") && !next.startsWith("//") && next !== "/" ? next : APP_HOME;
 }
 
 export function LoginForm() {

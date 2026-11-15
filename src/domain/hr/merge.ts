@@ -1,6 +1,5 @@
 // Contract templates: markdown with {{merge.fields}}. Rendering is pure so the
 // exact signed text can be frozen and hashed.
-import { createHash } from "node:crypto";
 
 export const MERGE_FIELDS = [
   "staff.name",
@@ -37,8 +36,6 @@ export function renderTemplate(body: string, values: Partial<Record<MergeField, 
     return v != null && v !== "" ? v : "________";
   });
 }
-
-export const contentHash = (text: string) => createHash("sha256").update(text, "utf8").digest("hex");
 
 /** Typed-name signature must match the account name (case, spacing and punctuation ignored). */
 export function namesMatch(typed: string, accountName: string): boolean {

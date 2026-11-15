@@ -33,7 +33,7 @@ export function middleware(req: NextRequest) {
   if (!hasSession && !isPublic(pathname)) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
-    url.search = pathname === "/" ? "" : `?next=${encodeURIComponent(pathname)}`;
+    url.search = `?next=${encodeURIComponent(pathname)}`;
     return NextResponse.redirect(url);
   }
 
@@ -46,6 +46,9 @@ export function middleware(req: NextRequest) {
 // (webhook signatures, single-use tokens, rate limits, CAPTCHA).
 const PUBLIC_PREFIXES = [
   "/login",
+  "/terms",
+  "/request",
+  "/site/",
   "/accept-invite/",
   "/reset-password",
   "/forgot-password",
@@ -64,6 +67,7 @@ const PUBLIC_PREFIXES = [
 ];
 
 function isPublic(pathname: string): boolean {
+  if (pathname === "/") return true; // public website homepage
   return PUBLIC_PREFIXES.some((p) => pathname === p.replace(/\/$/, "") || pathname.startsWith(p));
 }
 
