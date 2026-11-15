@@ -54,7 +54,7 @@ class WhiteboardTest extends TestCase
     public function test_approved_excuse_takes_the_callout_down(): void
     {
         app(HrAgent::class)->callouts($this->day->date->toDateString());
-        AttendanceExcuse::create(['attendance_day_id' => $this->day->id, 'user_id' => $this->staff->id, 'reason' => 'Client visit', 'status' => 'approved']);
+        AttendanceExcuse::forceCreate(['attendance_day_id' => $this->day->id, 'user_id' => $this->staff->id, 'reason' => 'Client visit', 'status' => 'approved']);
         app(Whiteboard::class)->reconcileDay($this->day);
         $p = WhiteboardPost::where('subject_user_id', $this->staff->id)->where('hashtags', 'like', '%"late"%')->first();
         $this->assertNotNull($p->retracted_at);

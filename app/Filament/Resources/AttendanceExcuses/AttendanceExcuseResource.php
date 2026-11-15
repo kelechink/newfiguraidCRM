@@ -56,12 +56,6 @@ class AttendanceExcuseResource extends Resource
                     ->columnSpanFull(),
                 TextInput::make('file_id')
                     ->default(null),
-                TextInput::make('status')
-                    ->required()
-                    ->default('pending'),
-                Select::make('reviewer_id')
-                    ->relationship('reviewer', 'name'),
-                DateTimePicker::make('decided_at'),
             ]);
     }
 
@@ -76,13 +70,8 @@ class AttendanceExcuseResource extends Resource
                     ->searchable(),
                 TextColumn::make('file_id')
                     ->searchable(),
-                TextColumn::make('status')
-                    ->searchable(),
                 TextColumn::make('reviewer.name')
                     ->searchable(),
-                TextColumn::make('decided_at')
-                    ->dateTime()
-                    ->sortable(),
             ])
             ->filters([
                 //

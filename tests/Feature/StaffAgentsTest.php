@@ -51,7 +51,7 @@ class StaffAgentsTest extends TestCase
         $this->travelTo(CarbonImmutable::parse('next monday 09:25', 'Africa/Lagos'));
         $staff = User::where('email', 'staff@figuraid.test')->first();
         $sup = User::where('email', 'support@figuraid.test')->first();
-        \App\Models\LeaveRequest::create(['user_id' => $sup->id, 'type' => 'annual', 'start_date' => today(), 'end_date' => today(), 'days' => 1, 'status' => 'approved']);
+        \App\Models\LeaveRequest::forceCreate(['user_id' => $sup->id, 'type' => 'annual', 'start_date' => today(), 'end_date' => today(), 'days' => 1, 'status' => 'approved']);
         app(HrAgent::class)->morning();
         $this->assertTrue(ChatMessage::where('agent_key', 'hr')->where('body', 'like', '%not clocked in%')->whereHas('chatChannel', fn ($q) => $q->where('direct_key', "agent:hr:$staff->id"))->exists());
         $this->assertFalse(ChatMessage::where('agent_key', 'hr')->whereHas('chatChannel', fn ($q) => $q->where('direct_key', "agent:hr:$sup->id"))->exists());

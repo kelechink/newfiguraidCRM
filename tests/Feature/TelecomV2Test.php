@@ -60,7 +60,7 @@ class TelecomV2Test extends TestCase
     {
         $svc = app(RateDeckService::class);
         $vend = Carrier::where('name', 'Sahel Telecom')->first();
-        $buy = RateDeck::create(['carrier_id' => $vend->id, 'direction' => 'buy', 'route_type' => 'sms', 'name' => 'SMS buy', 'currency' => 'EUR', 'effective_from' => today(), 'status' => 'active']);
+        $buy = RateDeck::forceCreate(['carrier_id' => $vend->id, 'direction' => 'buy', 'route_type' => 'sms', 'name' => 'SMS buy', 'currency' => 'EUR', 'effective_from' => today(), 'status' => 'active']);
         $buy->rates()->create(['carrier_id' => $vend->id, 'direction' => 'buy', 'route_type' => 'sms', 'destination' => 'Nigeria SMS', 'prefix' => '234', 'rate' => 0.01, 'currency' => 'EUR', 'effective_from' => today()]);
         $cust = Carrier::where('name', 'Nile Comms')->first();
         try {
@@ -81,7 +81,7 @@ class TelecomV2Test extends TestCase
         $deck = RateDeck::where('direction', 'sell')->where('status', 'active')->first();
         $cust = Carrier::where('name', 'Afrinet Carrier')->first();
         $cust->contacts()->create(['name' => 'Rates desk', 'role' => 'rates', 'email' => 'rates@afrinet.test']);
-        $b = RouteBroadcast::create(['subject' => 'Routes', 'body' => 'Hi', 'rate_deck_id' => $deck->id, 'recipient_carrier_ids' => [$cust->id], 'created_by_id' => $ops->id]);
+        $b = RouteBroadcast::forceCreate(['subject' => 'Routes', 'body' => 'Hi', 'rate_deck_id' => $deck->id, 'recipient_carrier_ids' => [$cust->id], 'created_by_id' => $ops->id]);
         $svc = app(BroadcastService::class);
         try {
             $svc->approve($b, $ops);

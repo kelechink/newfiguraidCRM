@@ -31,7 +31,6 @@ class CampaignForm
             TextInput::make('subject')->maxLength(190)->columnSpanFull(),
             Textarea::make('body')->rows(12)->columnSpanFull()->helperText('Use {first_name} and {company}. An unsubscribe link is added automatically.'),
             DateTimePicker::make('scheduled_at')->label('Send at (blank = as soon as approved)'),
-            Hidden::make('created_by_id')->default(fn () => auth()->id()),
         ]);
     }
 }

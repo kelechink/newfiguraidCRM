@@ -9,9 +9,12 @@ use App\Models\Concerns\Audited;
 
 class RouteBroadcast extends Model
 {
-    use HasUlids, Audited;
+    use HasUlids, Audited, \App\Models\Concerns\ProtectsWorkflow;
 
-    protected $guarded = ['id'];
+    protected $guarded = ['id', 'status', 'approved_by_id', 'sent_at', 'send_log', 'created_by_id'];
+
+    /** Filled from the signed-in user when a record is created. */
+    public array $creatorColumns = ['created_by_id'];
 
     protected function casts(): array
     {

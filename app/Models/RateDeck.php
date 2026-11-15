@@ -9,9 +9,9 @@ use App\Models\Concerns\Audited;
 
 class RateDeck extends Model
 {
-    use HasUlids, Audited;
+    use HasUlids, Audited, \App\Models\Concerns\ProtectsWorkflow;
 
-    protected $guarded = ['id'];
+    protected $guarded = ['id', 'status', 'approved_by_id', 'approved_at', 'validation'];
 
     protected function casts(): array
     {

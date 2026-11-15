@@ -52,7 +52,7 @@ class ChatResponder
             [$reply, $handoff] = ['Thanks — I\'ve passed this to the team and someone will get back to you shortly.', true];
         }
         $c->messages()->create(['agent_key' => $a->key, 'body' => $reply]);
-        AiAction::create(['agent_key' => $a->key, 'kind' => 'reply', 'subject_type' => 'User', 'subject_id' => $from->id, 'input_summary' => mb_substr($text, 0, 500), 'output' => $reply, 'status' => 'done']);
+        AiAction::forceCreate(['agent_key' => $a->key, 'kind' => 'reply', 'subject_type' => 'User', 'subject_id' => $from->id, 'input_summary' => mb_substr($text, 0, 500), 'output' => $reply, 'status' => 'done']);
         if ($handoff) {
             User::where('status', 'active')->whereHas('role', fn ($q) => $q->where('key', self::HANDOFF_ROLE[$a->key] ?? 'ops_manager'))->get()
                 ->each->notify(new Alert("{$a->name}: {$from->name} needs a person", mb_substr($text, 0, 200), '/app/chat'));

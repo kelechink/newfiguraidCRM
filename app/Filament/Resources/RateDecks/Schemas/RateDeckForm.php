@@ -32,15 +32,6 @@ class RateDeckForm
                     ->default('upload'),
                 Select::make('file_id')
                     ->relationship('file', 'id'),
-                TextInput::make('status')
-                    ->required()
-                    ->default('draft'),
-                Textarea::make('validation')
-                    ->default(null)
-                    ->columnSpanFull(),
-                Select::make('approved_by_id')
-                    ->relationship('approvedBy', 'name'),
-                DateTimePicker::make('approved_at'),
             ]);
     }
 }

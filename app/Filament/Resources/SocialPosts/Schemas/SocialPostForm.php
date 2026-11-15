@@ -19,8 +19,6 @@ class SocialPostForm
             Textarea::make('body')->rows(8)->required()->maxLength(2200)->columnSpanFull(),
             TextInput::make('image_url')->label('Public image URL')->url()->columnSpanFull(),
             DateTimePicker::make('scheduled_at')->label('Publish at (blank = when approved)'),
-            Hidden::make('created_by_id')->default(fn () => auth()->id()),
-            Hidden::make('status')->default('pending_approval'),
         ]);
     }
 }

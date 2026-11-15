@@ -49,7 +49,7 @@ class InvoiceService
     {
         return DB::transaction(function () use ($quote) {
             $inv = $quote->replicate(['number', 'public_token', 'signature_name', 'signed_at', 'signed_ip']);
-            $inv->fill(['kind' => 'invoice', 'number' => self::nextNumber($quote->unit->code), 'status' => 'sent', 'issue_date' => today(), 'due_date' => today()->addDays(14), 'public_token' => Str::random(40)])->save();
+            $inv->forceFill(['kind' => 'invoice', 'number' => self::nextNumber($quote->unit->code), 'status' => 'sent', 'issue_date' => today(), 'due_date' => today()->addDays(14), 'public_token' => Str::random(40), 'amount_paid' => 0, 'signature_name' => null, 'signed_at' => null, 'signed_ip' => null])->save();
             foreach ($quote->lines as $l) {
                 $inv->lines()->create($l->only(['description', 'quantity', 'unit_price', 'cost_price', 'vatable', 'amount']));
             }

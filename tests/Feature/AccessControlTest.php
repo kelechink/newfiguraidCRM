@@ -174,4 +174,34 @@ class AccessControlTest extends TestCase
         $r->assertOk()->assertHeader('X-Frame-Options', 'DENY')->assertHeader('X-Content-Type-Options', 'nosniff');
         $this->assertStringContainsString("frame-ancestors 'none'", $r->headers->get('Content-Security-Policy'));
     }
+
+    public function test_forms_cannot_self_approve_or_spoof_authorship(): void
+    {
+        $staff = $this->makeUser('staff');
+        $this->actingAs($staff);
+        $e = \App\Models\Expense::create(['unit_id' => $staff->primary_unit_id, 'description' => 'Taxi', 'amount' => 5000, 'currency' => 'NGN', 'date' => today(),
+            'status' => 'approved', 'approved_by_id' => $staff->id, 'requested_by_id' => \App\Models\User::first()->id, 'amount_ngn' => 1]);
+        $e->refresh();
+        $this->assertSame('requested', $e->status);
+        $this->assertNull($e->approved_by_id);
+        $this->assertSame($staff->id, $e->requested_by_id);
+        $this->assertEquals(5000, (float) $e->amount_ngn);
+
+        $other = \App\Models\User::where('email', 'support@figuraid.test')->first();
+        $l = \App\Models\LeaveRequest::create(['user_id' => $other->id, 'type' => 'annual', 'start_date' => today(), 'end_date' => today(), 'days' => 1, 'status' => 'approved']);
+        $l->refresh();
+        $this->assertSame('pending', $l->status);
+        $this->assertSame($staff->id, $l->user_id);
+
+        $b = \App\Models\RouteBroadcast::create(['subject' => 'x', 'body' => 'y', 'recipient_carrier_ids' => [], 'created_by_id' => $other->id, 'status' => 'approved']);
+        $this->assertSame($staff->id, $b->fresh()->created_by_id);
+        $this->assertSame('draft', $b->fresh()->status);
+    }
+
+    public function test_admin_cannot_edit_super_admin(): void
+    {
+        $sa = \App\Models\User::where('email', 'founder@figuraid.test')->first();
+        $this->actingAs($this->makeUser('admin'));
+        $this->assertFalse(\App\Filament\Resources\Users\UserResource::canEdit($sa));
+    }
 }

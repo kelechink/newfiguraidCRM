@@ -71,7 +71,7 @@ class AgentMessenger
         if ($bell && ! self::inQuietHours($u)) {
             $u->notify(new \App\Notifications\Alert("$a->name ($a->role): $subject", mb_substr($body, 0, 200), '/app/chat'));
         }
-        AiAction::create(['agent_key' => $a->key, 'kind' => 'message', 'subject_type' => 'User', 'subject_id' => $u->id, 'input_summary' => $subject, 'output' => $text, 'status' => 'done']);
+        AiAction::forceCreate(['agent_key' => $a->key, 'kind' => 'message', 'subject_type' => 'User', 'subject_id' => $u->id, 'input_summary' => $subject, 'output' => $text, 'status' => 'done']);
         $a->forceFill(['last_active_at' => now(), 'last_action' => mb_substr("Messaged {$u->name}: $subject", 0, 180)])->saveQuietly();
 
         return true;

@@ -59,12 +59,6 @@ class LeaveRequestResource extends Resource
                 Textarea::make('reason')
                     ->default(null)
                     ->columnSpanFull(),
-                TextInput::make('status')
-                    ->required()
-                    ->default('pending'),
-                Select::make('approver_id')
-                    ->relationship('approver', 'name'),
-                DateTimePicker::make('decided_at'),
             ]);
     }
 
@@ -86,14 +80,8 @@ class LeaveRequestResource extends Resource
                 TextColumn::make('days')
                     ->numeric()
                     ->sortable(),
-                TextColumn::make('status')
-                    ->searchable(),
                 TextColumn::make('approver.name')
                     ->searchable(),
-                TextColumn::make('decided_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 //

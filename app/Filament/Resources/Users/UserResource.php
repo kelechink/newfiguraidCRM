@@ -36,6 +36,18 @@ class UserResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
+    /** Only a Super Admin can edit or deactivate a Super Admin account (stops an Admin taking over the top account). */
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return \App\Authz\Access::allows(auth()->user(), static::$module, 'edit', $record, static::$ownColumns, static::$unitColumn)
+            && (! $record->isRole('super_admin') || auth()->user()->isRole('super_admin'));
+    }
+
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return false; // people are offboarded (Revoke access), never deleted — keeps the audit trail intact
+    }
+
     public static function form(Schema $schema): Schema
     {
         return UserForm::configure($schema);

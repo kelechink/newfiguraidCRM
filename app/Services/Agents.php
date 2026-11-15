@@ -45,7 +45,7 @@ class Agents
     {
         AiAgent::where('key', $agent)->update(['last_active_at' => now(), 'last_action' => mb_substr("$kind: ".strtok($output, "\n"), 0, 180)]);
 
-        return AiAction::create(['agent_key' => $agent, 'kind' => $kind, 'subject_type' => $subject ? class_basename($subject) : null, 'subject_id' => $subject?->getKey(), 'input_summary' => mb_substr($input, 0, 1000), 'output' => $output, 'status' => $status, 'provider' => $provider]);
+        return AiAction::forceCreate(['agent_key' => $agent, 'kind' => $kind, 'subject_type' => $subject ? class_basename($subject) : null, 'subject_id' => $subject?->getKey(), 'input_summary' => mb_substr($input, 0, 1000), 'output' => $output, 'status' => $status, 'provider' => $provider]);
     }
 
     /** Relevant public knowledge-base snippets for a question (simple keyword scoring; no internal articles). */

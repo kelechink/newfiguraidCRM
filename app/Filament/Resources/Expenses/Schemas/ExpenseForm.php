@@ -30,13 +30,6 @@ class ExpenseForm
                 TextInput::make('currency')
                     ->required()
                     ->default('NGN'),
-                TextInput::make('fx_rate')
-                    ->required()
-                    ->numeric()
-                    ->default(1.0),
-                TextInput::make('amount_ngn')
-                    ->required()
-                    ->numeric(),
                 TextInput::make('vat')
                     ->required()
                     ->numeric()
@@ -48,18 +41,8 @@ class ExpenseForm
                 DatePicker::make('date')
                     ->required(),
                 DatePicker::make('due_date'),
-                TextInput::make('status')
-                    ->required()
-                    ->default('requested'),
                 Select::make('receipt_file_id')
                     ->relationship('receiptFile', 'id'),
-                Select::make('requested_by_id')
-                    ->relationship('requestedBy', 'name')
-                    ->required(),
-                Select::make('approved_by_id')
-                    ->relationship('approvedBy', 'name'),
-                DateTimePicker::make('approved_at'),
-                DateTimePicker::make('paid_at'),
             ]);
     }
 }

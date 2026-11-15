@@ -17,8 +17,6 @@ class DeductionForm
                     ->required(),
                 Select::make('attendance_day_id')
                     ->relationship('attendanceDay', 'id'),
-                Select::make('payslip_id')
-                    ->relationship('payslip', 'id'),
                 TextInput::make('type')
                     ->required(),
                 TextInput::make('amount')

@@ -15,7 +15,7 @@ class SocialService
     {
         $r = app(AiGateway::class)->complete(Agents::agent('social')->brief."\nPlatform: $platform. Facts you may use:\n".Agents::knowledge($brief, $unitId, 3)."\nNo prices, no figures that are not in the facts, no claims about customers. Reply with the post text only.", AiGateway::fence($brief));
 
-        return SocialPost::create(['unit_id' => $unitId, 'platform' => $platform, 'body' => trim($r['text']), 'status' => 'pending_approval', 'agent_key' => 'social']);
+        return SocialPost::forceCreate(['unit_id' => $unitId, 'platform' => $platform, 'body' => trim($r['text']), 'status' => 'pending_approval', 'agent_key' => 'social']);
     }
 
     public function approve(SocialPost $p, User $by): void

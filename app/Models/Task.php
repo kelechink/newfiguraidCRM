@@ -9,9 +9,12 @@ use App\Models\Concerns\Audited;
 
 class Task extends Model
 {
-    use HasUlids, Audited;
+    use HasUlids, Audited, \App\Models\Concerns\ProtectsWorkflow;
 
-    protected $guarded = ['id'];
+    protected $guarded = ['id', 'escalated_at', 'reminder_count', 'last_reminded_at'];
+
+    /** Filled from the signed-in user when a record is created. */
+    public array $creatorColumns = ['creator_id'];
 
     protected function casts(): array
     {

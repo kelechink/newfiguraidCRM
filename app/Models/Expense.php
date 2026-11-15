@@ -9,9 +9,12 @@ use App\Models\Concerns\Audited;
 
 class Expense extends Model
 {
-    use HasUlids, Audited;
+    use HasUlids, Audited, \App\Models\Concerns\ProtectsWorkflow;
 
-    protected $guarded = ['id'];
+    protected $guarded = ['id', 'status', 'approved_by_id', 'approved_at', 'paid_at', 'requested_by_id', 'amount_ngn', 'fx_rate'];
+
+    /** Filled from the signed-in user when a record is created. */
+    public array $creatorColumns = ['requested_by_id'];
 
     protected function casts(): array
     {
@@ -58,5 +61,16 @@ class Expense extends Model
     public function vendor(): BelongsTo
     {
         return $this->belongsTo(Vendor::class, 'vendor_id');
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (Expense $e) {
+            if ($e->isDirty(['amount', 'currency', 'date']) || $e->amount_ngn === null) {
+                $rate = $e->currency === 'NGN' ? 1.0 : (\App\Services\FxService::rate($e->currency, $e->date?->toDateString()) ?? 0);
+                $e->fx_rate = $rate;
+                $e->amount_ngn = round((float) $e->amount * $rate, 2);
+            }
+        });
     }
 }

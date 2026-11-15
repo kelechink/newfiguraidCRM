@@ -63,8 +63,8 @@ class Whmcs
         foreach ($this->call('GetInvoices', ['limitnum' => 500, 'orderby' => 'date', 'order' => 'desc'])['invoices']['invoice'] ?? [] as $i) {
             $contact = Contact::where('whmcs_client_id', $i['userid'])->first();
             $status = ['Paid' => 'paid', 'Unpaid' => 'sent', 'Overdue' => 'overdue', 'Cancelled' => 'void', 'Refunded' => 'void'][$i['status']] ?? 'sent';
-            Invoice::updateOrCreate(['external_ref' => 'whmcs-'.$i['id']], ['unit_id' => $unit->id, 'number' => 'WHMCS-'.$i['id'], 'contact_id' => $contact?->id, 'currency' => $i['currencycode'] ?? 'NGN',
-                'issue_date' => $i['date'], 'due_date' => $i['duedate'], 'subtotal' => $i['subtotal'], 'vat' => (float) $i['tax'] + (float) $i['tax2'], 'total' => $i['total'], 'amount_paid' => $status === 'paid' ? $i['total'] : 0, 'status' => $status]);
+            Invoice::firstOrNew(['external_ref' => 'whmcs-'.$i['id']])->forceFill(['unit_id' => $unit->id, 'number' => 'WHMCS-'.$i['id'], 'contact_id' => $contact?->id, 'currency' => $i['currencycode'] ?? 'NGN',
+                'issue_date' => $i['date'], 'due_date' => $i['duedate'], 'subtotal' => $i['subtotal'], 'vat' => (float) $i['tax'] + (float) $i['tax2'], 'total' => $i['total'], 'amount_paid' => $status === 'paid' ? $i['total'] : 0, 'status' => $status])->save();
             $counts['invoices']++;
         }
         foreach ($this->call('GetTickets', ['limitnum' => 200])['tickets']['ticket'] ?? [] as $t) {

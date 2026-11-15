@@ -21,8 +21,6 @@ class RouteBroadcastForm
                 ->options(fn () => RateDeck::where('direction', 'sell')->where('status', 'active')->pluck('name', 'id')),
             Select::make('recipient_carrier_ids')->label('Send to')->multiple()->required()
                 ->options(fn () => Carrier::whereIn('role', ['customer', 'both'])->whereIn('status', ['active', 'testing'])->orderBy('name')->pluck('name', 'id')),
-            Hidden::make('created_by_id')->default(fn () => auth()->id()),
-            Hidden::make('status')->default('draft'),
         ]);
     }
 }

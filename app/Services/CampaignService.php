@@ -40,7 +40,7 @@ class CampaignService
         $r = app(AiGateway::class)->complete(Agents::agent('email')->brief."\n\nKnowledge base:\n".Agents::knowledge($c->brief, $c->unit_id, 3)."\n\nReply ONLY JSON: {\"subject\":\"...\",\"body\":\"plain text email, under 180 words, greeting uses {first_name}\"}", AiGateway::fence((string) $c->brief), 'heavy');
         $j = Money::extractJson($r['text']) ?? [];
         $c->forceFill(['subject' => mb_substr($j['subject'] ?? $c->name, 0, 190), 'body' => $j['body'] ?? $r['text']])->save();
-        \App\Models\AiAction::create(['agent_key' => 'email', 'kind' => 'campaign', 'subject_type' => 'Campaign', 'subject_id' => $c->id, 'input_summary' => mb_substr((string) $c->brief, 0, 500), 'output' => $c->body, 'status' => 'done', 'provider' => $r['provider']]);
+        \App\Models\AiAction::forceCreate(['agent_key' => 'email', 'kind' => 'campaign', 'subject_type' => 'Campaign', 'subject_id' => $c->id, 'input_summary' => mb_substr((string) $c->brief, 0, 500), 'output' => $c->body, 'status' => 'done', 'provider' => $r['provider']]);
     }
 
     public function approve(Campaign $c, User $by): void

@@ -28,12 +28,6 @@ class AiActionForm
                 Textarea::make('output')
                     ->default(null)
                     ->columnSpanFull(),
-                TextInput::make('status')
-                    ->required()
-                    ->default('done'),
-                Select::make('decided_by_id')
-                    ->relationship('decidedBy', 'name'),
-                DateTimePicker::make('decided_at'),
                 TextInput::make('quality_score')
                     ->numeric()
                     ->default(null),

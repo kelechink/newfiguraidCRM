@@ -9,9 +9,22 @@ use App\Models\Concerns\Audited;
 
 class AttendanceExcuse extends Model
 {
-    use HasUlids, Audited;
+    use HasUlids, Audited, \App\Models\Concerns\ProtectsWorkflow;
 
-    protected $guarded = ['id'];
+    protected $guarded = ['id', 'status', 'reviewer_id', 'decided_at'];
+
+    /** Filled from the signed-in user when a record is created. */
+    public array $creatorColumns = ['user_id'];
+
+    protected static function booted(): void
+    {
+        static::creating(function ($m) {
+            $u = auth()->user();
+            if ($u && $m->user_id !== $u->id && ! $u->canDo('attendance.review', 'approve')) {
+                $m->user_id = $u->id; // staff can only file for themselves
+            }
+        });
+    }
 
     protected function casts(): array
     {

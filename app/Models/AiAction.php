@@ -9,9 +9,9 @@ use App\Models\Concerns\Audited;
 
 class AiAction extends Model
 {
-    use HasUlids;
+    use HasUlids, \App\Models\Concerns\ProtectsWorkflow;
 
-    protected $guarded = ['id'];
+    protected $guarded = ['id', 'status', 'decided_by_id', 'decided_at'];
 
     protected function casts(): array
     {

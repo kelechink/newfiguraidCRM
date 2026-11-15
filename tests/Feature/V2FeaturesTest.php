@@ -32,7 +32,7 @@ class V2FeaturesTest extends TestCase
         Mail::fake();
         $optedIn = Contact::whereIn('id', Consent::where('granted', true)->pluck('contact_id'))->get();
         $this->assertCount(3, $optedIn);
-        $c = Campaign::create(['unit_id' => $optedIn[0]->primary_unit_id, 'name' => 'T', 'subject' => 'Hi', 'body' => 'Hello {first_name}', 'audience' => [], 'created_by_id' => $this->makeUser('marketing')->id]);
+        $c = Campaign::forceCreate(['unit_id' => $optedIn[0]->primary_unit_id, 'name' => 'T', 'subject' => 'Hi', 'body' => 'Hello {first_name}', 'audience' => [], 'created_by_id' => $this->makeUser('marketing')->id]);
         try {
             app(CampaignService::class)->approve($c, \App\Models\User::find($c->created_by_id));
             $this->fail('author cannot approve');

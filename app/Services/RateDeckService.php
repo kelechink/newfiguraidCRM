@@ -42,7 +42,7 @@ class RateDeckService
         }
 
         return DB::transaction(function () use ($carrier, $direction, $currency, $effective, $parsed, $fileId, $name, $routeType) {
-            $deck = RateDeck::create(['carrier_id' => $carrier->id, 'direction' => $direction, 'route_type' => $routeType, 'name' => $name ?: strtoupper($routeType).' '.$direction.' deck '.$carrier->name.' '.$effective, 'currency' => $currency, 'effective_from' => $effective, 'source' => 'upload', 'file_id' => $fileId, 'status' => 'draft']);
+            $deck = RateDeck::forceCreate(['carrier_id' => $carrier->id, 'direction' => $direction, 'route_type' => $routeType, 'name' => $name ?: strtoupper($routeType).' '.$direction.' deck '.$carrier->name.' '.$effective, 'currency' => $currency, 'effective_from' => $effective, 'source' => 'upload', 'file_id' => $fileId, 'status' => 'draft']);
             foreach (array_chunk($parsed['rows'], 500) as $chunk) {
                 Rate::insert(array_map(fn ($r) => ['rate_deck_id' => $deck->id, 'carrier_id' => $carrier->id, 'direction' => $direction, 'route_type' => $routeType, 'destination' => mb_substr($r['destination'] ?: $r['prefix'], 0, 120), 'prefix' => $r['prefix'], 'rate' => $r['rate'], 'currency' => $currency, 'effective_from' => $r['effective_from'] ?? $effective, 'increment_first' => $carrier->increment_first, 'increment_next' => $carrier->increment_next], $chunk));
             }
@@ -125,7 +125,7 @@ class RateDeckService
         $names = $buys->pluck('destination', 'prefix');
 
         return DB::transaction(function () use ($customer, $routeType, $currency, $effective, $marginPct, $best, $names) {
-            $deck = RateDeck::create(['carrier_id' => $customer->id, 'direction' => 'sell', 'route_type' => $routeType, 'currency' => $currency, 'effective_from' => $effective, 'source' => 'builder', 'status' => 'draft',
+            $deck = RateDeck::forceCreate(['carrier_id' => $customer->id, 'direction' => 'sell', 'route_type' => $routeType, 'currency' => $currency, 'effective_from' => $effective, 'source' => 'builder', 'status' => 'draft',
                 'name' => strtoupper($routeType).' sell deck '.$customer->name.' '.$effective]);
             foreach ($best as $prefix => $cost) {
                 $pct = $marginPct ?? self::targetMargin($routeType, (string) $prefix);

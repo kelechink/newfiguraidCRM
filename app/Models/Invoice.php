@@ -11,9 +11,12 @@ use App\Models\Concerns\Audited;
 
 class Invoice extends Model
 {
-    use HasUlids, SoftDeletes, Audited;
+    use HasUlids, SoftDeletes, Audited, \App\Models\Concerns\ProtectsWorkflow;
 
-    protected $guarded = ['id'];
+    protected $guarded = ['id', 'amount_paid', 'signature_name', 'signed_at', 'signed_ip', 'public_token', 'number', 'created_by_id'];
+
+    /** Filled from the signed-in user when a record is created. */
+    public array $creatorColumns = ['created_by_id'];
 
     protected function casts(): array
     {
@@ -71,5 +74,13 @@ class Invoice extends Model
     public function outstanding(): float
     {
         return round((float) $this->total - (float) $this->amount_paid, 2);
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (Invoice $i) {
+            $i->number ??= \App\Services\InvoiceService::nextNumber(BusinessUnit::find($i->unit_id)?->code ?? 'GEN', $i->kind ?? 'invoice');
+            $i->public_token ??= \Illuminate\Support\Str::random(40);
+        });
     }
 }

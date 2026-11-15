@@ -12,8 +12,6 @@ class PayrollRunForm
     {
         return $schema->components([
             TextInput::make('period_month')->label('Month (YYYY-MM)')->default(now()->format('Y-m'))->regex('/^\d{4}-\d{2}$/')->unique(ignoreRecord: true)->required()->disabledOn('edit'),
-            Hidden::make('prepared_by_id')->default(fn () => auth()->id()),
-            Hidden::make('status')->default('draft'),
         ]);
     }
 }

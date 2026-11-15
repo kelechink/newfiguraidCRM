@@ -9,9 +9,9 @@ use App\Models\Concerns\Audited;
 
 class Deduction extends Model
 {
-    use HasUlids, Audited;
+    use HasUlids, Audited, \App\Models\Concerns\ProtectsWorkflow;
 
-    protected $guarded = ['id'];
+    protected $guarded = ['id', 'payslip_id'];
 
     protected function casts(): array
     {

@@ -47,7 +47,6 @@ class InvoiceForm
             ])->mutateRelationshipDataBeforeSaveUsing(fn (array $d) => $d + ['amount' => round((float) $d['quantity'] * (float) $d['unit_price'], 2)])
               ->mutateRelationshipDataBeforeCreateUsing(fn (array $d) => array_merge($d, ['amount' => round((float) $d['quantity'] * (float) $d['unit_price'], 2)])),
             Textarea::make('notes')->columnSpanFull(),
-            Hidden::make('created_by_id')->default(fn () => auth()->id()),
         ]);
     }
 

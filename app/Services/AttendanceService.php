@@ -46,7 +46,7 @@ class AttendanceService
         );
         $date = self::today();
         $day = AttendanceDay::firstOrCreate(['user_id' => $u->id, 'date' => $date]);
-        $punch = AttendancePunch::create([
+        $punch = AttendancePunch::forceCreate([
             'attendance_day_id' => $day->id, 'user_id' => $u->id, 'type' => $type, 'device_time' => $deviceTs ? CarbonImmutable::createFromTimestamp($deviceTs) : now(),
             'server_time' => now(), 'latitude' => $lat, 'longitude' => $lng, 'accuracy_m' => $accuracy ? (int) min(65535, $accuracy) : null, 'distance_m' => $v['distance'],
             'within_geofence' => $v['within'], 'office_id' => $office?->id, 'selfie_file_id' => $selfieFileId, 'device_id' => $device?->id, 'flags' => $v['flags'],

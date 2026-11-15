@@ -9,9 +9,9 @@ use App\Models\Concerns\Audited;
 
 class AttendancePunch extends Model
 {
-    use HasUlids, Audited;
+    use HasUlids, Audited, \App\Models\Concerns\ProtectsWorkflow;
 
-    protected $guarded = ['id'];
+    protected $guarded = ['id', 'review_status', 'reviewed_by_id', 'within_geofence', 'distance_m', 'flags', 'server_time', 'user_id'];
 
     protected function casts(): array
     {
