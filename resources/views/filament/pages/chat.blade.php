@@ -11,7 +11,7 @@
 <div class="ch">
   <nav class="ch-side" aria-label="Channels">
     @foreach($channels as $c)
-      <button wire:click="$set('channelId', '{{ $c->id }}')" class="{{ $current?->id === $c->id ? 'on' : '' }}">{{ $c->kind === 'direct' ? '@ '.$c->members->where('id', '!=', auth()->id())->pluck('name')->implode(', ') : '# '.$c->name }}</button>
+      <button wire:click="$set('channelId', '{{ $c->id }}')" class="{{ $current?->id === $c->id ? 'on' : '' }}">{{ $c->agent_key ? '✦ '.$c->name : ($c->kind === 'direct' ? '@ '.$c->members->where('id', '!=', auth()->id())->pluck('name')->implode(', ') : '# '.$c->name) }}</button>
     @endforeach
     <div style="margin-top:12px;display:grid;gap:6px"><select wire:model="dmUser" aria-label="Message someone"><option value="">Message someone…</option>@foreach($people as $id => $n)<option value="{{ $id }}">{{ $n }}</option>@endforeach</select>
     <x-filament::button size="xs" color="gray" wire:click="openDm">Open</x-filament::button></div>

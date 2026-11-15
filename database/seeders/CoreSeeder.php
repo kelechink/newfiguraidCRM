@@ -76,7 +76,8 @@ class CoreSeeder extends Seeder
         MarginRule::firstOrCreate(['service' => 'sms', 'prefix' => null], ['min_margin_pct' => null, 'target_margin_pct' => null]);
 
         foreach (Agents::TEAM as [$key, $name, $role, $color, $brief, $approval]) {
-            AiAgent::firstOrCreate(['key' => $key], ['name' => $name, 'role' => $role, 'color' => $color, 'brief' => $brief, 'approval_required' => $approval, 'status' => 'active']);
+            AiAgent::firstOrCreate(['key' => $key], ['name' => $name, 'role' => $role, 'color' => $color, 'brief' => $brief, 'approval_required' => $approval, 'status' => 'active',
+                'kind' => in_array($key, ['hr', 'accountant', 'gm'], true) ? 'staff' : 'public', 'mailbox' => ['hr' => env('AGENT_MAILBOX_HR'), 'accountant' => env('AGENT_MAILBOX_FINANCE'), 'gm' => env('AGENT_MAILBOX_GM')][$key] ?? null]);
         }
         foreach (AiGateway::DEFAULTS as [$key, $name, $prio, $light, $heavy]) {
             AiProvider::firstOrCreate(['key' => $key], ['name' => $name, 'priority' => $prio, 'light_model' => $light, 'heavy_model' => $heavy, 'is_enabled' => true]);
@@ -109,7 +110,7 @@ class CoreSeeder extends Seeder
             \App\Models\AgentTestCase::firstOrCreate(['question' => $q], ['agent_key' => 'front_desk', 'must_include' => $inc, 'must_not_include' => $exc]);
         }
 
-        foreach (['finance.fx_basis' => 'parallel', 'inbox.sla_minutes' => 15, 'telecom.margin_alert_pct' => 2, 'finance.approval_limit_ngn' => 500000, 'finance.min_cash_ngn' => 2000000, 'payroll.pension_pct' => 8, 'payroll.nhf_pct' => 0, 'payroll.paye' => true] as $k => $v) {
+        foreach (['finance.fx_basis' => 'parallel', 'agents.max_messages_per_person_per_day' => 4, 'inbox.sla_minutes' => 15, 'telecom.margin_alert_pct' => 2, 'finance.approval_limit_ngn' => 500000, 'finance.min_cash_ngn' => 2000000, 'payroll.pension_pct' => 8, 'payroll.nhf_pct' => 0, 'payroll.paye' => true] as $k => $v) {
             if (! Setting::find($k)) {
                 Setting::put($k, $v);
             }

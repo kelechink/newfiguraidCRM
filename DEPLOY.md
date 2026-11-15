@@ -79,6 +79,14 @@ Push to the branch, then cPanel → *Git Version Control* → *Manage* → **Upd
 - **CDRs**: *Telecom → CDR uploads*. Large files: split above ~50 MB (shared-hosting upload limits).
 - New cron jobs run automatically: campaigns (every minute, 150 emails per run), social publishing (5 min), AI test suite (Mon 05:00), AI quality review (Fri 16:00), scheduled reports (07:30).
 
+## AI colleagues: HR (Amara), Financial Accountant (Tobi), General Manager (Obinna)
+- Create three mailboxes in cPanel → *Email Accounts*: `hr@`, `accounts@`, `gm@figuraid.com`, and put them in `.env`
+  (`AGENT_MAILBOX_HR`, `AGENT_MAILBOX_FINANCE`, `AGENT_MAILBOX_GM`). Agents email staff from your normal sending address with
+  their name, and replies go to these mailboxes (a person reads them). In Team chat, staff can answer the agents directly.
+- Rename agents, change their briefs or pause them in *AI team → AI agents*. Message limit per person per day: *Admin → Settings*.
+- Schedule: HR nudge 09:20, daily checks 10:00, end-of-day reminders 17:15, follow-ups hourly, finance note Monday 08:30,
+  GM weekly review Friday 16:30, staff points on the 1st.
+
 ## Notes for shared hosting
 - Browser push notifications when the app is closed need the PHP `gmp` extension (ask your host) or a push service; until then alerts show in the bell icon and by email.
 - Live updates use polling (inbox 15 s, notifications 30 s). Add Pusher keys later for instant updates.

@@ -63,6 +63,11 @@ class Chat extends Page
         $c->messages()->create(['author_id' => auth()->id(), 'body' => $this->body, 'mentions' => $mentioned->pluck('id')->all()]);
         $mentioned->each(fn ($u) => $u->notify(new Alert(auth()->user()->name.' mentioned you', mb_substr($this->body, 0, 140), '/app/chat')));
         $c->members()->updateExistingPivot(auth()->id(), ['last_read_at' => now()]);
+        if ($c->agent_key) {
+            $from = auth()->user();
+            $text = $this->body;
+            dispatch(fn () => app(\App\Services\StaffAgents\ChatResponder::class)->respond($c->fresh(), $from, $text))->afterResponse();
+        }
         $this->body = '';
     }
 
@@ -75,6 +80,14 @@ class Chat extends Page
 
     public function openDm(): void
     {
+        if (str_starts_with((string) $this->dmUser, 'agent:')) {
+            $agent = \App\Services\AgentMessenger::agent(substr($this->dmUser, 6));
+            abort_unless($agent && $agent->kind === 'staff', 404);
+            $this->channelId = \App\Services\AgentMessenger::channel($agent, auth()->user())->id;
+            $this->dmUser = null;
+
+            return;
+        }
         $other = User::where('status', 'active')->findOrFail($this->dmUser);
         $key = collect([auth()->id(), $other->id])->sort()->implode(':');
         $c = ChatChannel::firstOrCreate(['direct_key' => $key], ['kind' => 'direct', 'name' => null, 'created_by_id' => auth()->id()]);
@@ -94,7 +107,8 @@ class Chat extends Page
             'messages' => $c ? $c->messages()->with('author')->latest()->limit(100)->get()->reverse() : collect(),
             'agents' => AiAgent::pluck('name', 'key'),
             'colors' => AiAgent::pluck('color', 'key'),
-            'people' => User::where('status', 'active')->where('id', '!=', auth()->id())->orderBy('name')->pluck('name', 'id'),
+            'people' => AiAgent::where('kind', 'staff')->where('status', 'active')->get()->mapWithKeys(fn ($a) => ['agent:'.$a->key => "$a->name — $a->role (AI)"])
+                ->merge(User::where('status', 'active')->where('id', '!=', auth()->id())->orderBy('name')->pluck('name', 'id')),
         ];
     }
 }

@@ -91,6 +91,22 @@ Artisan::command('ai:review', function () {
     $avg = \App\Models\AiAction::where('created_at', '>=', now()->subWeek())->whereNotNull('quality_score')->avg('quality_score');
     Ops::notifyRoles(['super_admin', 'ops_manager'], 'Weekly AI quality review', "$done replies reviewed. Average score this week: ".($avg ? round($avg, 1) : '—').'/5. Low scores are listed under AI activity.', '/app/ai-actions', true);
 })->purpose('Weekly AI quality review (scores a sample of agent replies)');
+Artisan::command('agents:run {slot}', function (string $slot) {
+    $hr = app(\App\Services\StaffAgents\HrAgent::class);
+    $acct = app(\App\Services\StaffAgents\AccountantAgent::class);
+    $gm = app(\App\Services\StaffAgents\GeneralManagerAgent::class);
+    $n = match ($slot) {
+        'morning' => $hr->morning() + $gm->morning(),
+        'daily' => $hr->daily() + $acct->daily() + $acct->monthEnd(),
+        'evening' => $hr->evening(),
+        'weekly-finance' => $acct->weekly(),
+        'weekly-gm' => $gm->weekly(),
+        'points' => $hr->monthlyPoints(),
+        'followups' => app(\App\Services\AgentMessenger::class)->followUps(),
+        default => 0,
+    };
+    $this->info("$slot: $n message(s)");
+})->purpose('Run the HR, Accountant and General Manager agents (slot: morning|daily|evening|weekly-finance|weekly-gm|points|followups)');
 Artisan::command('uptime:check', fn () => $this->info(app(Ops::class)->uptime().' down'))->purpose('Check websites');
 Artisan::command('audit:verify', function () {
     $prev = str_repeat('0', 64);
@@ -147,6 +163,13 @@ Schedule::command('campaigns:send')->everyMinute()->withoutOverlapping();
 Schedule::command('social:publish')->everyFiveMinutes()->withoutOverlapping();
 Schedule::command('ai:test')->weeklyOn(1, '05:00');
 Schedule::command('ai:review')->weeklyOn(5, '16:00');
+Schedule::command('agents:run morning')->weekdays()->at('09:20');
+Schedule::command('agents:run daily')->dailyAt('10:00');
+Schedule::command('agents:run evening')->weekdays()->at('17:15');
+Schedule::command('agents:run followups')->hourly()->between('9:00', '17:30')->weekdays();
+Schedule::command('agents:run weekly-finance')->weeklyOn(1, '08:30');
+Schedule::command('agents:run weekly-gm')->weeklyOn(5, '16:30');
+Schedule::command('agents:run points')->monthlyOn(1, '09:00');
 Schedule::command('audit:verify')->weeklyOn(1, '03:00');
 
 Artisan::command('fos:admin {email} {name}', function (string $email, string $name) {

@@ -19,6 +19,8 @@ class Task extends Model
             'due_at' => 'datetime',
             'completed_at' => 'datetime',
             'checklist' => 'array',
+            'last_reminded_at' => 'datetime',
+            'escalated_at' => 'datetime',
             'tags' => 'array',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
@@ -48,5 +50,14 @@ class Task extends Model
     public function comments(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(TaskComment::class);
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (Task $t) {
+            if ($t->isDirty('status')) {
+                $t->completed_at = $t->status === 'done' ? ($t->completed_at ?? now()) : null;
+            }
+        });
     }
 }
