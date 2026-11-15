@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Services\AgentMessenger;
 use App\Services\AttendanceService;
 use App\Services\StaffPoints;
+use App\Services\Whiteboard;
 use Carbon\CarbonImmutable;
 
 /**
@@ -73,6 +74,7 @@ class HrAgent
                 $n += (int) (bool) $this->m->request(self::KEY, $d->user, 'Explain your attendance on '.CarbonImmutable::parse($y)->format('D j M'), "Yesterday $why. If there was a valid reason (work outside the office, illness, emergency), submit an excuse in Attendance with any evidence. Otherwise the ₦3,000 deduction stays.", now()->addDays(2), "absence-$d->id", '/app/attendance-days');
             }
         }
+        $n += $this->callouts($y);
         $stale = LeaveRequest::where('status', 'pending')->where('created_at', '<', now()->subDay())->count() + AttendanceExcuse::where('status', 'pending')->where('created_at', '<', now()->subDay())->count();
         if ($stale && AgentMessenger::once('hr:approvals:'.today()->toDateString())) {
             foreach ($this->hrPeople() as $h) {
@@ -115,6 +117,57 @@ class HrAgent
         return $n;
     }
 
+    /** Whiteboard call-outs for a finished day: #late #earlysignoff #absent #noshow #noreport (taken down automatically if excused). */
+    public function callouts(string $date): int
+    {
+        $wb = app(Whiteboard::class);
+        $label = CarbonImmutable::parse($date)->format('D j M');
+        $n = 0;
+        foreach (AttendanceDay::where('date', $date)->whereIn('status', ['late', 'absent', 'present'])->with('user')->get() as $d) {
+            $u = $d->user;
+            if (! $u || $u->status !== 'active' || \App\Models\AttendanceExcuse::where('attendance_day_id', $d->id)->where('status', 'approved')->exists()) {
+                continue;
+            }
+            $posts = [];
+            if ($d->status === 'late') {
+                $posts[] = ['late', "arrived {$d->minutes_late} min late on $label."];
+            }
+            if ($d->status === 'absent') {
+                $posts[] = $d->missing_clock_out ? ['noshow', "clocked in but never clocked out on $label."] : ['absent', "was absent without approved leave on $label."];
+            }
+            if ($d->minutes_early > 0 && $d->status !== 'absent') {
+                $posts[] = ['earlysignoff', "signed off {$d->minutes_early} min before 17:00 on $label."];
+            }
+            if ($d->first_in_at && $d->status !== 'absent' && ! DailyReport::where('user_id', $u->id)->whereDate('date', $date)->exists()) {
+                $posts[] = ['noreport', "sent no end-of-day report on $label."];
+            }
+            foreach ($posts as [$tag, $text]) {
+                $n += (int) (bool) $wb->post(self::KEY, $u, [$tag], $text, $tag === 'noreport' ? null : 'AttendanceDay', $tag === 'noreport' ? null : $d->id, "$tag:$d->id");
+            }
+        }
+        foreach (User::where('status', 'onboarding')->where('created_at', '<', now()->subDays(3))->get() as $u) {
+            $n += (int) (bool) $wb->post(self::KEY, $u, ['contractpending'], 'has not signed the contract pack after 3 days.', null, null, "contractpending:$u->id");
+        }
+
+        return $n;
+    }
+
+    /** Friday kudos: #perfectweek for everyone on time every working day this week. */
+    public function weeklyKudos(): int
+    {
+        $from = CarbonImmutable::now('Africa/Lagos')->startOfWeek();
+        $n = 0;
+        foreach ($this->staff() as $u) {
+            $days = AttendanceDay::where('user_id', $u->id)->whereBetween('date', [$from->toDateString(), $from->addDays(4)->toDateString()])->get();
+            $worked = $days->whereIn('status', ['present', 'late', 'absent']);
+            if ($worked->count() >= 4 && $worked->every(fn ($d) => $d->status === 'present' && $d->minutes_early === 0)) {
+                $n += (int) (bool) app(Whiteboard::class)->post(self::KEY, $u, ['perfectweek'], 'was on time and stayed the full day every day this week. Well done!', null, null, "perfectweek:$u->id:".$from->format('o-W'));
+            }
+        }
+
+        return $n;
+    }
+
     /** 17:15 — remind people who haven't sent today's end-of-day report. */
     public function evening(): int
     {
@@ -144,7 +197,10 @@ class HrAgent
         }
         $label = CarbonImmutable::parse("$month-01")->format('F Y');
         $top = $rows->take(3)->map(fn ($r, $i) => ['🥇', '🥈', '🥉'][$i].' '.$r->user->name.' — '.$r->points.' pts')->implode("\n");
-        $this->m->announce(self::KEY, "Staff points for $label\n$top\n\nEveryone can see their own breakdown under Team → Points.");
+        $this->m->announce(self::KEY, "Staff points for $label\n$top\n\nEveryone can see their own breakdown under Team → Staff points.");
+        foreach ($rows->take(3)->where("points", ">", 0) as $r) {
+            app(Whiteboard::class)->post(self::KEY, $r->user, ['topperformer'], "finished #{$r->rank} in staff points for $label with {$r->points} points.", null, null, "top:$month:{$r->user_id}");
+        }
         foreach ($rows as $r) {
             $lines = collect($r->breakdown)->filter(fn ($b) => $b['count'] > 0)->map(fn ($b, $k) => '• '.StaffPoints::RULES[$k][1].': '.$b['count'].' → '.($b['points'] > 0 ? '+' : '').$b['points'])->implode("\n");
             $this->m->tell(self::KEY, $r->user, "Your points for $label: {$r->points} (rank {$r->rank} of {$rows->count()})", $lines ?: 'No activity recorded.', '/app/staff-points', false);

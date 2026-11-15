@@ -4,14 +4,13 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-// v2: HR, Accountant and General Manager agents that message staff by email and chat, track requests and follow up.
+// v2: HR, Accountant and General Manager agents that message staff inside the platform (chat + bell), track requests and follow up.
 return new class extends Migration
 {
     public function up(): void
     {
         Schema::table('ai_agents', function (Blueprint $t) {
-            $t->string('mailbox')->nullable()->after('color'); // reply-to address people can answer, e.g. hr@figuraid.com
-            $t->string('kind', 10)->default('public')->after('mailbox'); // public (customer-facing) | staff (internal colleague)
+            $t->string('kind', 10)->default('public')->after('color'); // public (customer-facing) | staff (internal colleague)
         });
         Schema::table('tasks', function (Blueprint $t) {
             $t->unsignedTinyInteger('reminder_count')->default(0);
@@ -36,6 +35,6 @@ return new class extends Migration
         Schema::dropIfExists('staff_points');
         Schema::table('chat_channels', fn (Blueprint $t) => $t->dropColumn('agent_key'));
         Schema::table('tasks', fn (Blueprint $t) => $t->dropColumn(['reminder_count', 'last_reminded_at', 'escalated_at']));
-        Schema::table('ai_agents', fn (Blueprint $t) => $t->dropColumn(['mailbox', 'kind']));
+        Schema::table('ai_agents', fn (Blueprint $t) => $t->dropColumn('kind'));
     }
 };

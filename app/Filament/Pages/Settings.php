@@ -33,6 +33,7 @@ class Settings extends Page
         'payroll.pension_pct' => ['Employee pension (%)', 'number'],
         'payroll.nhf_pct' => ['NHF (%)', 'number'],
         'payroll.paye' => ['Deduct PAYE', 'bool'],
+        'whiteboard.callouts_enabled' => ['Whiteboard call-outs (#late, #absent…) switched on', 'bool'],
         'agents.max_messages_per_person_per_day' => ['Most messages one person can get from the AI colleagues per day', 'number'],
         'security.admin_ip_allowlist' => ['Admin & finance IP allowlist (comma separated, blank = any)', 'list'],
     ];

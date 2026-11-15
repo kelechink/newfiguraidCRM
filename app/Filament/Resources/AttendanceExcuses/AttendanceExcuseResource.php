@@ -88,6 +88,19 @@ class AttendanceExcuseResource extends Resource
                 //
             ])
             ->recordActions([
+                \Filament\Actions\Action::make('approve')->label('Approve')->icon('heroicon-o-check')->color('success')->requiresConfirmation()
+                    ->modalDescription('No deduction for this day, and any Whiteboard call-out for it is taken down.')
+                    ->visible(fn ($record) => $record->status === 'pending' && $record->user_id !== auth()->id() && auth()->user()->canDo('attendance.review', 'approve'))
+                    ->action(function ($record) {
+                        $record->forceFill(['status' => 'approved', 'reviewer_id' => auth()->id(), 'decided_at' => now()])->save();
+                        $day = $record->attendanceDay;
+                        app(\App\Services\Whiteboard::class)->reconcileDay($day);
+                        app(\App\Services\AttendanceService::class)->deductionsForMonth($record->user, $day->date->format('Y-m'));
+                        $record->user->notify(new \App\Notifications\Alert('Excuse approved', 'No deduction for '.$day->date->format('D j M').'.'));
+                    }),
+                \Filament\Actions\Action::make('reject')->label('Reject')->color('danger')->requiresConfirmation()
+                    ->visible(fn ($record) => $record->status === 'pending' && auth()->user()->canDo('attendance.review', 'approve'))
+                    ->action(fn ($record) => $record->forceFill(['status' => 'rejected', 'reviewer_id' => auth()->id(), 'decided_at' => now()])->save()),
                 EditAction::make(),
                 DeleteAction::make(),
             ])

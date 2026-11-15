@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\AgentMessenger;
 use App\Services\InboxRouter;
 use App\Services\Ops;
+use App\Services\Whiteboard;
 
 /**
  * General Manager agent: keeps work moving across all four units. It chases owners of overdue work, stalled
@@ -62,6 +63,19 @@ class GeneralManagerAgent
         foreach (Deal::where('status', 'open')->where(fn ($q) => $q->whereNull('next_action_on')->orWhere('next_action_on', '<', today()->subDays(3)))->whereNotNull('owner_id')->with('owner')->get() as $d) {
             if ($d->owner) {
                 $n += (int) (bool) $this->m->request(self::KEY, $d->owner, "Update the deal: $d->title", 'This deal has no current next step. Contact the customer, then set the next action and date (or mark it lost with a reason).', now()->addDay(), "deal-$d->id", '/app/deals-board');
+            }
+        }
+
+        // Whiteboard: customers left waiting past the SLA yesterday (#slabreach), tasks overdue more than 3 days (#overdue)
+        $wb = app(Whiteboard::class);
+        foreach (Conversation::where('escalation_level', '>=', 2)->whereDate('updated_at', today()->subDay())->whereNotNull('assignee_id')->with('assignee')->get() as $c) {
+            if ($c->assignee) {
+                $wb->post(self::KEY, $c->assignee, ['slabreach'], 'left a customer ('.ucfirst($c->channel).') waiting past the 15-minute reply time.', 'Conversation', $c->id, "sla:$c->id");
+            }
+        }
+        foreach (Task::whereNull('agent_key')->where('status', '!=', 'done')->where('due_at', '<', now()->subDays(3))->whereNotNull('assignee_id')->with('assignee')->get() as $t) {
+            if ($t->assignee) {
+                $wb->post(self::KEY, $t->assignee, ['overdue'], "has \"{$t->title}\" overdue since ".$t->due_at->format('j M').'.', 'Task', $t->id, "overdue:$t->id");
             }
         }
 

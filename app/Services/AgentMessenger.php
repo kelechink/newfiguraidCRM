@@ -9,11 +9,10 @@ use App\Models\Setting;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Mail;
 
 /**
- * How staff agents (HR, Accountant, General Manager) talk to colleagues: a direct chat in Team chat and/or an
- * email to the person's work address, signed as the agent and clearly marked as AI. Every message is logged.
+ * How staff agents (HR, Accountant, General Manager) talk to colleagues — only inside the platform: a direct
+ * message in Team chat, the bell, #General and the Whiteboard. They have no email accounts. Every message is logged.
  * Guardrails: a daily cap per person, quiet hours respected, duplicate messages suppressed.
  */
 class AgentMessenger
@@ -52,10 +51,10 @@ class AgentMessenger
     }
 
     /**
-     * Send a message to a colleague. $email: also email their work address (skipped in quiet hours and over the cap).
-     * Returns false when suppressed by the cap/agent paused.
+     * Send a message to a colleague inside the platform: a direct message in Team chat, plus a bell notification
+     * when $bell is true. Agents have no email accounts. Returns false when suppressed (cap / agent paused).
      */
-    public function tell(string $agentKey, User $u, string $subject, string $body, ?string $url = null, bool $email = true): bool
+    public function tell(string $agentKey, User $u, string $subject, string $body, ?string $url = null, bool $bell = true): bool
     {
         $a = self::agent($agentKey);
         if (! $a || $u->status !== 'active') {
@@ -69,20 +68,10 @@ class AgentMessenger
         }
         $text = $body.($url ? "\n\nOpen: ".url($url) : '');
         self::channel($a, $u)->messages()->create(['agent_key' => $a->key, 'body' => "**$subject**\n$text"]);
-        $sentEmail = false;
-        if ($email && $u->email && ! self::inQuietHours($u)) {
-            try {
-                Mail::raw("Hello ".strtok($u->name, ' ').",\n\n$text\n\nYou can reply to this email or answer me in Team chat.\n\n$a->name\n$a->role (AI colleague) — Figuraid", function ($m) use ($u, $subject, $a) {
-                    $m->to($u->email)->subject($subject)->from(config('mail.from.address'), "$a->name ({$a->role}, AI) — Figuraid");
-                    if ($a->mailbox) {
-                        $m->replyTo($a->mailbox, $a->name);
-                    }
-                });
-                $sentEmail = true;
-            } catch (\Throwable) {
-            }
+        if ($bell && ! self::inQuietHours($u)) {
+            $u->notify(new \App\Notifications\Alert("$a->name ($a->role): $subject", mb_substr($body, 0, 200), '/app/chat'));
         }
-        AiAction::create(['agent_key' => $a->key, 'kind' => 'message', 'subject_type' => 'User', 'subject_id' => $u->id, 'input_summary' => $subject, 'output' => $text.($sentEmail ? "\n[emailed]" : ''), 'status' => 'done']);
+        AiAction::create(['agent_key' => $a->key, 'kind' => 'message', 'subject_type' => 'User', 'subject_id' => $u->id, 'input_summary' => $subject, 'output' => $text, 'status' => 'done']);
         $a->forceFill(['last_active_at' => now(), 'last_action' => mb_substr("Messaged {$u->name}: $subject", 0, 180)])->saveQuietly();
 
         return true;
@@ -142,6 +131,9 @@ class AgentMessenger
                 } elseif ($m = self::managerOf($u)) {
                     $this->tell($t->agent_key, $m, "Escalation: {$u->name} — {$t->title}", "{$u->name} has not completed this after two reminders (due ".$t->due_at->format('j M').'). Please follow up.', "/app/tasks/$t->id/edit");
                     $t->forceFill(['escalated_at' => now()])->save();
+                    $key = (string) ($t->tags[0] ?? '');
+                    $tag = collect(['receipt-' => 'missingreceipt', 'absence-' => 'noexplanation', 'deal-' => 'stalleddeal'])->first(fn ($v, $prefix) => str_starts_with($key, $prefix)) ?? 'overdue';
+                    app(Whiteboard::class)->post($t->agent_key, $u, [$tag], "did not complete \"{$t->title}\" after two reminders (due ".$t->due_at->format('j M').').', 'Task', $t->id, "escalated:$t->id");
                 }
                 $n++;
             });

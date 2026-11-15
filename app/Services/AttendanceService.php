@@ -75,6 +75,7 @@ class AttendanceService
             'minutes_early' => $r['minutes_early'], 'missing_clock_out' => $r['missing_clock_out'], 'worked_minutes' => $r['worked_minutes'],
             'is_flagged' => AttendancePunch::where('attendance_day_id', $day->id)->where('review_status', 'pending')->exists(),
         ])->save();
+        app(Whiteboard::class)->reconcileDay($day);
 
         return $day;
     }

@@ -102,6 +102,7 @@ Artisan::command('agents:run {slot}', function (string $slot) {
         'weekly-finance' => $acct->weekly(),
         'weekly-gm' => $gm->weekly(),
         'points' => $hr->monthlyPoints(),
+        'kudos' => $hr->weeklyKudos(),
         'followups' => app(\App\Services\AgentMessenger::class)->followUps(),
         default => 0,
     };
@@ -168,6 +169,7 @@ Schedule::command('agents:run daily')->dailyAt('10:00');
 Schedule::command('agents:run evening')->weekdays()->at('17:15');
 Schedule::command('agents:run followups')->hourly()->between('9:00', '17:30')->weekdays();
 Schedule::command('agents:run weekly-finance')->weeklyOn(1, '08:30');
+Schedule::command('agents:run kudos')->weeklyOn(5, '17:20');
 Schedule::command('agents:run weekly-gm')->weeklyOn(5, '16:30');
 Schedule::command('agents:run points')->monthlyOn(1, '09:00');
 Schedule::command('audit:verify')->weeklyOn(1, '03:00');
