@@ -11,7 +11,7 @@ class PayrollRun extends Model
 {
     use HasUlids, Audited, \App\Models\Concerns\ProtectsWorkflow;
 
-    protected $guarded = ['id', 'status', 'approved_by_id', 'approved_at', 'signed_off_by_id', 'signed_off_at', 'paid_at', 'total_gross', 'total_net', 'staff_count', 'prepared_by_id'];
+    protected $guarded = ['id', 'status', 'approved_by_id', 'approved_at', 'signed_off_by_id', 'signed_off_at', 'paid_at', 'total_gross', 'total_net', 'staff_count', 'prepared_by_id', 'employer_costs'];
 
     /** Filled from the signed-in user when a record is created. */
     public array $creatorColumns = ['prepared_by_id'];
@@ -21,6 +21,7 @@ class PayrollRun extends Model
         return [
             'total_gross' => 'encrypted',
             'total_net' => 'encrypted',
+            'employer_costs' => 'encrypted:array',
             'approved_at' => 'datetime',
             'signed_off_at' => 'datetime',
             'paid_at' => 'datetime',

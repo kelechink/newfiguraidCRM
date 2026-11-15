@@ -11,7 +11,7 @@ use App\Models\Concerns\Audited;
 
 class Invoice extends Model
 {
-    use HasUlids, SoftDeletes, Audited, \App\Models\Concerns\ProtectsWorkflow;
+    use HasUlids, SoftDeletes, Audited, \App\Models\Concerns\ProtectsWorkflow, \App\Models\Concerns\RecordsOfficialRate;
 
     protected $guarded = ['id', 'amount_paid', 'signature_name', 'signed_at', 'signed_ip', 'public_token', 'number', 'created_by_id'];
 
@@ -83,4 +83,5 @@ class Invoice extends Model
             $i->public_token ??= \Illuminate\Support\Str::random(40);
         });
     }
+
 }

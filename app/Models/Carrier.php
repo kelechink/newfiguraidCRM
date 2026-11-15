@@ -12,13 +12,16 @@ class Carrier extends Model
 {
     use HasUlids, SoftDeletes, Audited;
 
-    protected $guarded = ['id'];
+    protected $guarded = ['id', 'prepaid_balance', 'suspended_at'];
 
     protected function casts(): array
     {
         return [
             'credit_limit' => 'decimal:2',
             'prepaid_balance' => 'decimal:2',
+            'low_balance_threshold' => 'decimal:2',
+            'cycle_anchor' => 'date',
+            'suspended_at' => 'datetime',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
             'deleted_at' => 'datetime',

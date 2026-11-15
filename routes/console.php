@@ -28,6 +28,15 @@ Artisan::command('fx:update', function () {
         $this->error($e->getMessage());
     }
 })->purpose('Research today\'s parallel-market naira rates (AI web search, two-source rule)');
+Artisan::command('fx:official', function () {
+    try {
+        $this->table(['Currency', 'Rate', 'Accepted', 'Reason'], collect(app(FxService::class)->researchOfficial())->map(fn ($v, $k) => [$k, $v['rate'], $v['accepted'] ? 'yes' : 'NO', $v['reason']])->all());
+    } catch (\Throwable $e) {
+        $this->error($e->getMessage());
+    }
+})->purpose('Research today\'s official (CBN/NFEM) naira rates for tax values');
+Artisan::command('billing:close', fn () => $this->info(json_encode(app(\App\Services\CarrierBilling::class)->closeCycles())))->purpose('Invoice closed carrier cycles; open vendor cycles for statement checks');
+Artisan::command('billing:prepaid', fn () => $this->info(app(\App\Services\CarrierBilling::class)->burnPrepaid().' prepaid carrier(s) charged'))->purpose('Deduct yesterday\'s usage from prepaid balances');
 Artisan::command('inbox:escalate', fn () => $this->info(app(InboxRouter::class)->escalate().' escalated'))->purpose('SLA reminders, reassignment and escalation');
 Artisan::command('attendance:close', fn () => $this->info(app(Ops::class)->closeAttendance().' staff days closed'))->purpose('Recompute yesterday (absences, no-shows)');
 Artisan::command('attendance:deductions {month?}', function ($month = null) {
@@ -154,6 +163,9 @@ Schedule::command('playbooks:generate')->dailyAt('06:00');
 Schedule::command('attendance:close')->dailyAt('00:30');
 Schedule::command('attendance:deductions')->dailyAt('00:45');
 Schedule::command('fx:update')->dailyAt('08:15');
+Schedule::command('fx:official')->dailyAt('08:25');
+Schedule::command('billing:prepaid')->dailyAt('00:50');
+Schedule::command('billing:close')->dailyAt('01:10');
 Schedule::command('brief:morning')->weekdays()->at('07:45');
 Schedule::command('care:run')->dailyAt('09:05');
 Schedule::command('ops:daily')->dailyAt('07:00');

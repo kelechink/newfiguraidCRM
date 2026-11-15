@@ -9,7 +9,7 @@ use App\Models\Concerns\Audited;
 
 class Payment extends Model
 {
-    use HasUlids, Audited;
+    use HasUlids, Audited, \App\Models\Concerns\RecordsOfficialRate;
 
     protected $guarded = ['id'];
 
@@ -40,4 +40,5 @@ class Payment extends Model
     {
         return $this->belongsTo(BusinessUnit::class, 'unit_id');
     }
+
 }

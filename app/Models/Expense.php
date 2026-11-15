@@ -9,7 +9,7 @@ use App\Models\Concerns\Audited;
 
 class Expense extends Model
 {
-    use HasUlids, Audited, \App\Models\Concerns\ProtectsWorkflow;
+    use HasUlids, Audited, \App\Models\Concerns\ProtectsWorkflow, \App\Models\Concerns\RecordsOfficialRate;
 
     protected $guarded = ['id', 'status', 'approved_by_id', 'approved_at', 'paid_at', 'requested_by_id', 'amount_ngn', 'fx_rate'];
 
@@ -73,4 +73,5 @@ class Expense extends Model
             }
         });
     }
+
 }
