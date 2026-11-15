@@ -29,7 +29,7 @@ class TelecomBillingTest extends TestCase
         $this->assertNull(Telecom::checkSellRate(0.025, null, 5));
         $this->assertSame('negative', Telecom::marginAlert(Telecom::margin(100, 120), 2));
         $this->assertSame('thin', Telecom::marginAlert(Telecom::margin(100, 99), 2));
-        $this->assertEqualsWithDelta(0.0239, Telecom::priceFor(0.021, 12), 0.0001);
+        $this->assertEqualsWithDelta(0.023864, Telecom::priceFor(0.021, 12), 0.000001);
     }
 
     public function test_cycles_7_3_and_credit(): void

@@ -18,8 +18,8 @@ class RateDeckForm
                 Select::make('carrier_id')
                     ->relationship('carrier', 'name')
                     ->required(),
-                TextInput::make('direction')
-                    ->required(),
+                \Filament\Forms\Components\Select::make('direction')->options(['sell' => 'Sell', 'buy' => 'Buy'])->required(),
+                \Filament\Forms\Components\Select::make('route_type')->options(\App\Services\RateDeckService::ROUTE_TYPES)->default('cli')->required(),
                 TextInput::make('name')
                     ->required(),
                 TextInput::make('currency')

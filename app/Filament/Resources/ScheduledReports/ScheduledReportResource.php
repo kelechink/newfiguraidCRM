@@ -43,19 +43,11 @@ class ScheduledReportResource extends Resource
     {
         return $schema
             ->components([
-                TextInput::make('name')
-                    ->required(),
-                TextInput::make('report')
-                    ->required(),
-                TextInput::make('frequency')
-                    ->required(),
-                Textarea::make('recipients')
-                    ->required()
-                    ->columnSpanFull(),
-                Select::make('owner_id')
-                    ->relationship('owner', 'name')
-                    ->required(),
-                DateTimePicker::make('last_sent_at'),
+                TextInput::make('name')->required(),
+                \Filament\Forms\Components\Select::make('report')->options(\App\Services\ReportService::REPORTS)->required(),
+                \Filament\Forms\Components\Select::make('frequency')->options(['daily' => 'Daily 07:30', 'weekly' => 'Mondays', 'monthly' => '1st of the month'])->required(),
+                \Filament\Forms\Components\TagsInput::make('recipients')->placeholder('name@figuraid.com')->nestedRecursiveRules(['email'])->required(),
+                \Filament\Forms\Components\Hidden::make('owner_id')->default(fn () => auth()->id()),
             ]);
     }
 

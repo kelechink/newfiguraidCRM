@@ -75,7 +75,8 @@ final class Telecom
     /** Sell price that hits a target margin on revenue. */
     public static function priceFor(float $buy, float $targetMarginPct): float
     {
-        return self::r4($buy / (1 - $targetMarginPct / 100));
+        // rounded UP at 6 decimals so rounding never takes the margin below target
+        return ceil(round($buy / (1 - $targetMarginPct / 100) * 1e6, 3)) / 1e6;
     }
 
     public static function asrAcd(?int $attempts, ?int $connected, float $rawSeconds): array

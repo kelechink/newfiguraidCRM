@@ -69,8 +69,11 @@ class CoreSeeder extends Seeder
         foreach (['Rent & office', 'Salaries', 'Internet & telephony', 'Hosting & software', 'Telecom vendors', 'Marketing', 'Transport', 'Equipment', 'Professional fees', 'Bank charges', 'Taxes & levies', 'Training', 'Other'] as $c) {
             ExpenseCategory::firstOrCreate(['name' => $c]);
         }
-        MarginRule::firstOrCreate(['service' => 'voice', 'prefix' => null], ['min_margin_pct' => 5, 'target_margin_pct' => 12]);
-        MarginRule::firstOrCreate(['service' => 'sms', 'prefix' => null], ['min_margin_pct' => 8, 'target_margin_pct' => 15]);
+        // Management rule: voice routes priced at 4% minimum to 8% target margin; SMS margin set per route by the team.
+        foreach (['tdm', 'cc', 'cli'] as $type) {
+            MarginRule::firstOrCreate(['service' => $type, 'prefix' => null], ['min_margin_pct' => 4, 'target_margin_pct' => 8]);
+        }
+        MarginRule::firstOrCreate(['service' => 'sms', 'prefix' => null], ['min_margin_pct' => null, 'target_margin_pct' => null]);
 
         foreach (Agents::TEAM as [$key, $name, $role, $color, $brief, $approval]) {
             AiAgent::firstOrCreate(['key' => $key], ['name' => $name, 'role' => $role, 'color' => $color, 'brief' => $brief, 'approval_required' => $approval, 'status' => 'active']);

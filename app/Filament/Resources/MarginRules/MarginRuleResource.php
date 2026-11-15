@@ -40,19 +40,10 @@ class MarginRuleResource extends Resource
     {
         return $schema
             ->components([
-                TextInput::make('service')
-                    ->required()
-                    ->default('voice'),
-                TextInput::make('prefix')
-                    ->default(null),
-                TextInput::make('min_margin_pct')
-                    ->required()
-                    ->numeric()
-                    ->default(5.0),
-                TextInput::make('target_margin_pct')
-                    ->required()
-                    ->numeric()
-                    ->default(10.0),
+                \Filament\Forms\Components\Select::make('service')->label('Route type')->options(\App\Services\RateDeckService::ROUTE_TYPES)->required(),
+                TextInput::make('prefix')->helperText('Blank = default for the route type; enter a prefix to override one destination.'),
+                TextInput::make('min_margin_pct')->label('Minimum margin % (blank = no fixed minimum)')->numeric(),
+                TextInput::make('target_margin_pct')->label('Target margin % for the deck builder')->numeric(),
             ]);
     }
 

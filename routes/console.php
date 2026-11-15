@@ -50,6 +50,7 @@ Artisan::command('ops:daily', function () {
     $this->info('fraud '.$o->fraudScan().', dunning '.$o->dunning().', renewals '.$o->renewals());
     $o->reconciliationReport();
 })->purpose('Fraud scan, dunning, renewals, reconciliation report');
+Artisan::command('reports:send', fn () => $this->info(app(\App\Services\ReportService::class)->sendDue().' report(s) sent'))->purpose('Email scheduled reports');
 Artisan::command('uptime:check', fn () => $this->info(app(Ops::class)->uptime().' down'))->purpose('Check websites');
 Artisan::command('audit:verify', function () {
     $prev = str_repeat('0', 64);
@@ -101,6 +102,7 @@ Schedule::command('care:run')->dailyAt('09:05');
 Schedule::command('ops:daily')->dailyAt('07:00');
 Schedule::command('leads:retention')->dailyAt('02:00');
 Schedule::command('backup:run')->dailyAt('01:30');
+Schedule::command('reports:send')->dailyAt('07:30');
 Schedule::command('audit:verify')->weeklyOn(1, '03:00');
 
 Artisan::command('fos:admin {email} {name}', function (string $email, string $name) {

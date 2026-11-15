@@ -17,6 +17,7 @@ class RouteBroadcast extends Model
     {
         return [
             'recipient_carrier_ids' => 'array',
+            'send_log' => 'array',
             'sent_at' => 'datetime',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',

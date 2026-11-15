@@ -30,6 +30,7 @@ class ListRateDecks extends ListRecords
                     Select::make('carrier_id')->label('Carrier')->options(Carrier::orderBy('name')->pluck('name', 'id'))->searchable()->required()->live()
                         ->afterStateUpdated(fn ($state, callable $set) => $set('currency', Carrier::find($state)?->currency ?? 'USD')),
                     Select::make('direction')->options(fn () => array_filter(['sell' => 'Sell deck (to customer)', 'buy' => Access::can(auth()->user(), 'telecom.buy_rates', 'view') ? 'Vendor buy rates' : null]))->required()->default('sell'),
+                    Select::make('route_type')->label('Route type')->options(RateDeckService::ROUTE_TYPES)->default('cli')->required(),
                     Select::make('currency')->options(['USD' => 'USD', 'EUR' => 'EUR', 'GBP' => 'GBP', 'NGN' => 'NGN'])->default('USD')->required(),
                     DatePicker::make('effective')->default(today())->required(),
                     TextInput::make('name')->placeholder('Optional deck name'),
@@ -42,7 +43,7 @@ class ListRateDecks extends ListRecords
                     $path = Storage::disk('private')->path($data['file']);
                     $f = StoredFile::create(['disk' => 'private', 'path' => $data['file'], 'original_name' => basename($data['file']), 'mime' => mime_content_type($path) ?: 'text/csv', 'size' => filesize($path), 'sha256' => hash_file('sha256', $path), 'purpose' => 'rate_sheet', 'uploaded_by_id' => auth()->id()]);
                     try {
-                        $deck = app(RateDeckService::class)->import(Carrier::findOrFail($data['carrier_id']), $data['direction'], $data['currency'], $data['effective'], $path, $f->id, $data['name'] ?? null);
+                        $deck = app(RateDeckService::class)->import(Carrier::findOrFail($data['carrier_id']), $data['direction'], $data['currency'], $data['effective'], $path, $f->id, $data['name'] ?? null, $data['route_type']);
                         $v = $deck->validation;
                         $msg = "{$v['rows']} rates imported.";
                         if ($deck->direction === 'sell') {
@@ -53,6 +54,27 @@ class ListRateDecks extends ListRecords
                         Notification::make()->title('Rate sheet processed')->body($msg)->{count($v['blocking'] ?? []) ? 'warning' : 'success'}()->persistent()->send();
                     } catch (\Throwable $e) {
                         Notification::make()->title('Could not read the sheet')->body($e->getMessage())->danger()->persistent()->send();
+                    }
+                }),
+            Action::make('build')->label('Build sell deck')->icon('heroicon-o-sparkles')->color('gray')
+                ->visible(fn () => Access::can(auth()->user(), 'telecom.routes', 'create') && Access::can(auth()->user(), 'telecom.margins', 'view'))
+                ->modalDescription('Prices every destination from the cheapest active vendor rate of this route type. Voice uses the target margin (8%) unless you enter one; SMS needs a margin. The deck is saved as a draft for review and approval.')
+                ->schema([
+                    Select::make('carrier_id')->label('Customer')->options(Carrier::whereIn('role', ['customer', 'both'])->orderBy('name')->pluck('name', 'id'))->searchable()->required()->live()
+                        ->afterStateUpdated(fn ($state, callable $set) => $set('currency', Carrier::find($state)?->currency ?? 'USD')),
+                    Select::make('route_type')->label('Route type')->options(RateDeckService::ROUTE_TYPES)->default('cli')->required()->live(),
+                    Select::make('currency')->options(['USD' => 'USD', 'EUR' => 'EUR', 'GBP' => 'GBP', 'NGN' => 'NGN'])->default('USD')->required(),
+                    DatePicker::make('effective')->default(today()->addDay())->required(),
+                    TextInput::make('margin')->label('Margin % (leave blank for the default)')->numeric()->minValue(0)->maxValue(90)
+                        ->required(fn (callable $get) => $get('route_type') === 'sms'),
+                ])
+                ->action(function (array $data) {
+                    try {
+                        $deck = app(RateDeckService::class)->buildSellDeck(Carrier::findOrFail($data['carrier_id']), $data['route_type'], $data['currency'], $data['effective'], filled($data['margin'] ?? null) ? (float) $data['margin'] : null);
+                        Notification::make()->title('Draft sell deck built')->body($deck->rates()->count().' destinations priced. Review, then approve.')->success()->send();
+                        $this->redirect(RateDeckResource::getUrl('edit', ['record' => $deck]));
+                    } catch (\RuntimeException $e) {
+                        Notification::make()->title('Could not build the deck')->body($e->getMessage())->danger()->send();
                     }
                 }),
             CreateAction::make(),

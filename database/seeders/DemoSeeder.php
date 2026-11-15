@@ -130,8 +130,8 @@ class DemoSeeder extends Seeder
         $vend = Carrier::firstOrCreate(['name' => 'Sahel Telecom'], ['role' => 'vendor', 'country' => 'Niger', 'currency' => 'EUR', 'status' => 'active', 'kyc_status' => 'verified', 'rate_email' => 'rates@sahel.test']);
         $both = Carrier::firstOrCreate(['name' => 'Nile Comms'], ['role' => 'both', 'country' => 'Egypt', 'currency' => 'USD', 'credit_limit' => 10000, 'status' => 'testing', 'kyc_status' => 'pending']);
         $routes = [['Nigeria Mobile', '234', 0.021, 0.025], ['Ghana Mobile', '233', 0.105, 0.118], ['Kenya Mobile', '254', 0.032, 0.036], ['UK Mobile', '447', 0.0085, 0.0099]];
-        $buy = RateDeck::firstOrCreate(['name' => 'Sahel November deck'], ['carrier_id' => $vend->id, 'direction' => 'buy', 'currency' => 'EUR', 'effective_from' => today()->subDays(10), 'status' => 'active']);
-        $sell = RateDeck::firstOrCreate(['name' => 'Afrinet sell deck'], ['carrier_id' => $cust->id, 'direction' => 'sell', 'currency' => 'USD', 'effective_from' => today()->subDays(10), 'status' => 'active']);
+        $buy = RateDeck::firstOrCreate(['name' => 'Sahel November deck'], ['carrier_id' => $vend->id, 'direction' => 'buy', 'route_type' => 'cli', 'currency' => 'EUR', 'effective_from' => today()->subDays(10), 'status' => 'active']);
+        $sell = RateDeck::firstOrCreate(['name' => 'Afrinet sell deck'], ['carrier_id' => $cust->id, 'direction' => 'sell', 'route_type' => 'cli', 'currency' => 'USD', 'effective_from' => today()->subDays(10), 'status' => 'active']);
         if (! $buy->rates()->exists()) {
             foreach ($routes as [$dest, $prefix, $b, $s]) {
                 $buy->rates()->create(['carrier_id' => $vend->id, 'direction' => 'buy', 'destination' => $dest, 'prefix' => $prefix, 'rate' => $b, 'currency' => 'EUR', 'effective_from' => today()->subDays(10)]);
