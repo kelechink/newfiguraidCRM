@@ -11,8 +11,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->trustProxies(at: '*');
+        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
+        $middleware->validateCsrfTokens(except: ['webhooks/*']);
+        $middleware->redirectGuestsTo(fn ($r) => $r->is('portal*') ? '/portal/login' : '/app/login');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->dontFlash(['password', 'password_confirmation', 'current_password', 'secret', 'token']);
     })->create();

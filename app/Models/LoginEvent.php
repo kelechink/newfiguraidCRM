@@ -7,7 +7,7 @@ use App\Models\Concerns\Audited;
 
 class LoginEvent extends Model
 {
-    use Audited;
+    
 
     public $timestamps = false;
 

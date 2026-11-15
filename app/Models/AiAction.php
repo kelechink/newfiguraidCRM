@@ -9,7 +9,7 @@ use App\Models\Concerns\Audited;
 
 class AiAction extends Model
 {
-    use HasUlids, Audited;
+    use HasUlids;
 
     protected $guarded = ['id'];
 

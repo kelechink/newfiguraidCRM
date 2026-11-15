@@ -7,7 +7,7 @@ use App\Models\Concerns\Audited;
 
 class AiUsage extends Model
 {
-    use Audited;
+    
 
     protected $table = 'ai_usage';
 

@@ -10,7 +10,7 @@ use App\Models\Concerns\Audited;
 
 class ChatMessage extends Model
 {
-    use HasUlids, SoftDeletes, Audited;
+    use HasUlids, SoftDeletes;
 
     protected $guarded = ['id'];
 

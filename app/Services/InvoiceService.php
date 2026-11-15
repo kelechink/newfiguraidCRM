@@ -13,7 +13,7 @@ class InvoiceService
     /** FIG-WEB-2026-0001 / Q-… / CN-… numbering per unit and year, gap-free under a row lock. */
     public static function nextNumber(string $unitCode, string $kind = 'invoice'): string
     {
-        $prefix = ['invoice' => 'FIG', 'quote' => 'Q', 'credit' => 'CN'][$kind].'-'.strtoupper(substr($unitCode, 0, 4)).'-'.now()->year.'-';
+        $prefix = ['invoice' => 'FIG', 'quote' => 'Q', 'credit' => 'CN'][$kind].'-'.(['TELECOM' => 'TEL', 'FIGUREWEB' => 'WEB', 'ACADEMY' => 'ACA', 'PROCUREMENT' => 'PRO'][$unitCode] ?? strtoupper(substr($unitCode, 0, 3))).'-'.now()->year.'-';
 
         return DB::transaction(function () use ($prefix) {
             $last = Invoice::withTrashed()->where('number', 'like', "$prefix%")->lockForUpdate()->orderByDesc('number')->value('number');

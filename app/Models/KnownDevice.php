@@ -8,7 +8,7 @@ use App\Models\Concerns\Audited;
 
 class KnownDevice extends Model
 {
-    use Audited;
+    
 
     public $timestamps = false;
 

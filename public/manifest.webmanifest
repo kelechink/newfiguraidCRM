@@ -1,0 +1,1 @@
+{"name":"Figuraid OS","short_name":"Figuraid","start_url":"/app","display":"standalone","background_color":"#000000","theme_color":"#000000","icons":[{"src":"/favicon.svg","sizes":"any","type":"image/svg+xml"}],"shortcuts":[{"name":"Clock in","url":"/clock"},{"name":"Inbox","url":"/app/conversations"},{"name":"Tasks","url":"/app/tasks"}]}

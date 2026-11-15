@@ -9,7 +9,7 @@ use App\Models\Concerns\Audited;
 
 class Activity extends Model
 {
-    use HasUlids, Audited;
+    use HasUlids;
 
     public $timestamps = false;
 
