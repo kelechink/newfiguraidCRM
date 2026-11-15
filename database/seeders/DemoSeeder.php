@@ -145,6 +145,11 @@ class DemoSeeder extends Seeder
             }
         }
 
+        \App\Models\PortalUser::firstOrCreate(['email' => 'noc@afrinet.test'], ['contact_id' => Contact::first()->id, 'carrier_id' => $cust->id, 'password' => $pw]);
+        \App\Models\PortalUser::firstOrCreate(['email' => 'client@lagostechhub.test'], ['contact_id' => Contact::skip(4)->first()->id, 'password' => $pw]);
+        \App\Models\ContractTemplate::firstOrCreate(['kind' => 'employment', 'version' => 1], ['title' => 'Employment contract', 'status' => 'approved', 'body' => "This agreement is between Figuraid Ltd and {{name}}, dated {{date}}.\n\nDRAFT — to be reviewed by Figuraid's lawyer before use.\n\n1. Hours: Monday to Friday, 09:00 to 17:00 at Kano House, Abuja.\n2. Attendance deductions: late arrival ₦500; leaving before 17:00 ₦500; absence without approved leave ₦3,000 per day; a missed clock-out is treated as absence.\n3. Confidentiality: customer, carrier, rate and payroll information must not be shared outside Figuraid systems.\n4. Notice: as stated in your offer letter."]);
+        \App\Models\ContractTemplate::firstOrCreate(['kind' => 'nda', 'version' => 1], ['title' => 'Confidentiality & acceptable use', 'status' => 'approved', 'body' => "DRAFT — lawyer review pending.\n\nI, {{name}}, will protect customer data under the Nigeria Data Protection Act 2023, use only approved systems, keep my password and two-factor codes private, and report any suspected breach to the Operations Manager immediately."]);
+
         // Finance
         $mk = function ($unit, $contact, $carrier, $currency, $lines, $status, $daysAgo) use ($users) {
             $inv = Invoice::create(['unit_id' => $unit->id, 'number' => InvoiceService::nextNumber($unit->code), 'contact_id' => $contact?->id, 'carrier_id' => $carrier?->id, 'currency' => $currency, 'fx_rate' => $currency === 'NGN' ? 1 : (float) FxRate::where('currency', $currency)->latest('date')->value('ngn_per_unit'), 'issue_date' => today()->subDays($daysAgo), 'due_date' => today()->subDays($daysAgo - 14), 'status' => $status, 'public_token' => Str::random(40), 'created_by_id' => $users['finance']->id]);

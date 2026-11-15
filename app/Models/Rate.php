@@ -32,4 +32,9 @@ class Rate extends Model
     {
         return $this->belongsTo(RateDeck::class, 'rate_deck_id');
     }
+
+    public function deck(): BelongsTo
+    {
+        return $this->belongsTo(RateDeck::class, 'rate_deck_id');
+    }
 }

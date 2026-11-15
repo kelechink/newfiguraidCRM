@@ -39,3 +39,15 @@ Route::middleware('throttle:webhooks')->prefix('webhooks')->group(function () {
     Route::post('/meta', [WebhookController::class, 'meta']);
     Route::post('/email', [WebhookController::class, 'email']);
 });
+
+// Customer portal (separate guard; carriers, hosting clients, students)
+Route::prefix('portal')->group(function () {
+    Route::get('/login', [\App\Http\Controllers\PortalController::class, 'loginForm'])->name('portal.login');
+    Route::post('/login', [\App\Http\Controllers\PortalController::class, 'login'])->middleware('throttle:public-forms');
+    Route::middleware('auth:portal')->group(function () {
+        Route::get('/', [\App\Http\Controllers\PortalController::class, 'home'])->name('portal.home');
+        Route::post('/logout', [\App\Http\Controllers\PortalController::class, 'logout'])->name('portal.logout');
+        Route::post('/routes', [\App\Http\Controllers\PortalController::class, 'requestRoute'])->middleware('throttle:public-forms')->name('portal.routes');
+        Route::post('/tickets', [\App\Http\Controllers\PortalController::class, 'ticket'])->middleware('throttle:public-forms')->name('portal.tickets');
+    });
+});

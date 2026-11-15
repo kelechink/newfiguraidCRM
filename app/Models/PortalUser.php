@@ -2,33 +2,34 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Models\Concerns\Audited;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Models\Concerns\Audited;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 
-class PortalUser extends Model
+/** Customer portal login (carriers, hosting clients, Academy students). Separate guard from staff. */
+class PortalUser extends Authenticatable
 {
-    use HasUlids, Audited;
+    use Audited, HasUlids;
 
-    protected $guarded = ['id'];
+    protected $fillable = ['contact_id', 'carrier_id', 'email', 'password'];
+
+    protected $hidden = ['password', 'remember_token'];
+
+    public array $auditExclude = ['password', 'remember_token', 'last_login_at'];
 
     protected function casts(): array
     {
-        return [
-            'last_login_at' => 'datetime',
-            'created_at' => 'datetime',
-            'updated_at' => 'datetime',
-        ];
-    }
-
-    public function carrier(): BelongsTo
-    {
-        return $this->belongsTo(Carrier::class, 'carrier_id');
+        return ['password' => 'hashed', 'last_login_at' => 'datetime'];
     }
 
     public function contact(): BelongsTo
     {
-        return $this->belongsTo(Contact::class, 'contact_id');
+        return $this->belongsTo(Contact::class);
+    }
+
+    public function carrier(): BelongsTo
+    {
+        return $this->belongsTo(Carrier::class);
     }
 }
