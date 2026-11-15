@@ -24,7 +24,23 @@ class EditConversation extends EditRecord
         $c = $this->record;
 
         return [
-            Action::make('reply')->label('Reply')->icon('heroicon-o-paper-airplane')->modalWidth('2xl')
+            Action::make('template')->label('Send WhatsApp template')->icon('heroicon-o-document-duplicate')->color('warning')
+                ->visible(fn () => $c->channel === 'whatsapp' && ! ChannelSender::insideWindow($c))
+                ->modalDescription('The customer last wrote more than 24 hours ago, so WhatsApp only accepts a pre-approved template.')
+                ->schema([
+                    Select::make('template_id')->label('Template')->required()->live()
+                        ->options(fn () => \App\Models\WhatsappTemplate::where('is_active', true)->get()->mapWithKeys(fn ($t) => [$t->id => $t->name.' — '.mb_substr($t->body, 0, 60)])),
+                    Textarea::make('params')->label('Values for {{1}}, {{2}}… (one per line)')->rows(3)
+                        ->helperText(fn ($get) => ($t = \App\Models\WhatsappTemplate::find($get('template_id'))) ? 'Template: '.$t->body : ''),
+                ])
+                ->action(function (array $data) use ($c) {
+                    $t = \App\Models\WhatsappTemplate::findOrFail($data['template_id']);
+                    $params = array_values(array_filter(array_map('trim', preg_split('/\r?\n/', (string) ($data['params'] ?? ''))), fn ($v) => $v !== ''));
+                    $m = app(ChannelSender::class)->sendTemplate($c, $t, $params, auth()->id());
+                    Notification::make()->title($m->delivery === 'failed' ? 'Template not sent — check WhatsApp settings' : 'Template sent')->{$m->delivery === 'failed' ? 'warning' : 'success'}()->send();
+                }),
+            Action::make('reply')->label('Reply')
+                ->visible(fn () => ChannelSender::insideWindow($c))->icon('heroicon-o-paper-airplane')->modalWidth('2xl')
                 ->fillForm(fn () => ['body' => Message::where('conversation_id', $c->id)->where('delivery', 'draft')->latest()->value('body')])
                 ->schema([Textarea::make('body')->label('Message to customer')->rows(6)->required()->maxLength(4000)->helperText('Drafted by Ada when available. Prices, discounts, refunds and contracts must be confirmed by a person.')])
                 ->action(function (array $data) use ($c) {

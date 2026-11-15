@@ -6,5 +6,5 @@
 <label for="p">Password</label><input id="p" type="password" name="password" required autocomplete="current-password">
 @error('email')<p class="flash warn">{{ $message }}</p>@enderror
 <button class="btn" type="submit">Sign in</button></form>
-<p class="muted" style="font-size:13px">No account yet? Ask your Figuraid account manager to invite you.</p></div>
+<p class="muted" style="font-size:13px"><a href="/portal/forgot">Forgot your password?</a> · No account yet? Ask your Figuraid account manager to invite you.</p></div>
 @endsection

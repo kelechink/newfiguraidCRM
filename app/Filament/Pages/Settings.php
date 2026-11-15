@@ -37,6 +37,7 @@ class Settings extends Page
         'payroll.nsitf' => ['Pay NSITF (1% of payroll)', 'bool'],
         'payroll.itf' => ['Pay ITF (1% of payroll — 5+ staff or ₦50m turnover)', 'bool'],
         'telecom.statement_tolerance_pct' => ['Vendor statement tolerance before a dispute (%)', 'number'],
+        'whiteboard.first_offence_private' => ['First call-out of each kind per month is a private warning (repeats go public)', 'bool'],
         'whiteboard.callouts_enabled' => ['Whiteboard call-outs (#late, #absent…) switched on', 'bool'],
         'agents.max_messages_per_person_per_day' => ['Most messages one person can get from the AI colleagues per day', 'number'],
         'security.require_2fa_all' => ['Require two-factor sign-in for all staff', 'bool'],

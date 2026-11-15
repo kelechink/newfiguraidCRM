@@ -89,3 +89,24 @@ Route::get('/privacy/verify/{request}/{token}', function (\App\Models\DataReques
 
     return view('public.data-request', ['verified' => $ok]);
 })->middleware('signed')->name('privacy.verify');
+
+// Customer portal: invitation / password reset
+Route::get('/portal/forgot', fn () => view('portal.forgot'))->name('portal.forgot');
+Route::post('/portal/forgot', function (\Illuminate\Http\Request $r) {
+    app(\App\Services\PortalAccess::class)->sendReset((string) $r->validate(['email' => 'required|email'])['email']);
+
+    return back()->with('status', 'If that email has portal access, a reset link is on its way.');
+})->middleware('throttle:public-forms');
+Route::match(['get', 'post'], '/portal/password/{portalUser}/{token}', function (\Illuminate\Http\Request $r, \App\Models\PortalUser $portalUser, string $token) {
+    abort_unless($portalUser->invite_token && hash_equals($portalUser->invite_token, $token), 403);
+    if ($r->isMethod('post')) {
+        $data = $r->validate(['password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()]]);
+        $portalUser->forceFill(['password' => $data['password'], 'invite_token' => null])->save();
+        \Illuminate\Support\Facades\Auth::guard('portal')->login($portalUser);
+        $r->session()->regenerate();
+
+        return redirect('/portal');
+    }
+
+    return view('portal.password');
+})->middleware(['signed', 'throttle:public-forms'])->name('portal.password');

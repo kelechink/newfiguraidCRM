@@ -57,6 +57,17 @@ class EnrolmentsTable
                 //
             ])
             ->recordActions([
+                \Filament\Actions\Action::make('certificate')->label(fn ($record) => $record->certificate_issued_at ? 'Certificate PDF' : 'Issue certificate')->icon('heroicon-o-academic-cap')
+                    ->visible(fn ($record) => auth()->user()->canDo('academy.certificates', $record->certificate_issued_at ? 'view' : 'create'))
+                    ->action(function ($record) {
+                        try {
+                            $e = app(\App\Services\Certificates::class)->issue($record);
+
+                            return response()->streamDownload(fn () => print(app(\App\Services\Certificates::class)->pdf($e)), 'certificate-'.$e->certificate_code.'.pdf');
+                        } catch (\RuntimeException $ex) {
+                            \Filament\Notifications\Notification::make()->title($ex->getMessage())->warning()->send();
+                        }
+                    }),
                 EditAction::make(),
             ])
             ->toolbarActions([

@@ -11,7 +11,7 @@ class Enrolment extends Model
 {
     use HasUlids, Audited;
 
-    protected $guarded = ['id'];
+    protected $guarded = ['id', 'certificate_code', 'certificate_issued_at'];
 
     protected function casts(): array
     {

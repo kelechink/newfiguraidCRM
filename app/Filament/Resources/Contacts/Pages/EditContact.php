@@ -33,6 +33,13 @@ class EditContact extends EditRecord
                     $c->forceFill(['last_activity_at' => now()])->saveQuietly();
                     Notification::make()->title('Logged')->success()->send();
                 }),
+            Action::make('portal')->label('Invite to customer portal')->icon('heroicon-o-key')->color('gray')
+                ->visible(fn () => (bool) $c->email && auth()->user()->canDo('crm.contacts', 'edit'))
+                ->schema([Select::make('carrier_id')->label('Carrier account (telecom customers)')->options(\App\Models\Carrier::whereIn('role', ['customer', 'both'])->pluck('name', 'id'))->searchable()])
+                ->action(function (array $data) use ($c) {
+                    app(\App\Services\PortalAccess::class)->invite($c, $data['carrier_id'] ?? null);
+                    Notification::make()->title('Invitation emailed to '.$c->email)->success()->send();
+                }),
             Action::make('health')->label('Recalculate health')->color('gray')->icon('heroicon-o-heart')
                 ->action(fn () => $c->forceFill(['health_score' => $c->computeHealth()])->save()),
             DeleteAction::make(),

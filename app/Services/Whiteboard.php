@@ -56,6 +56,20 @@ class Whiteboard
         if (! self::enabled($kind) || ($agentKey && ! AgentMessenger::agent($agentKey))) {
             return null;
         }
+        if ($kind === 'callout' && $agentKey && (bool) Setting::get('whiteboard.first_offence_private', true)) {
+            $earlier = WhiteboardPost::where('subject_user_id', $subject->id)->where('created_at', '>=', now()->startOfMonth())
+                ->where('hashtags', 'like', '%"'.$tags[0].'"%')->exists()
+                || \Illuminate\Support\Facades\Cache::has("wb-private:$subject->id:{$tags[0]}:".now()->format('Y-m'));
+            if (! $earlier) {
+                if ($dedupe && ! \Illuminate\Support\Facades\Cache::add("wb-private-dedupe:$dedupe", 1, 40 * 86400)) {
+                    return null;
+                }
+                \Illuminate\Support\Facades\Cache::put("wb-private:$subject->id:{$tags[0]}:".now()->format('Y-m'), 1, 40 * 86400);
+                app(AgentMessenger::class)->tell($agentKey, $subject, 'Private warning: #'.$tags[0], "You $body This is a private first warning for this month — next time it goes on the Whiteboard for everyone to see.", '/app/whiteboard');
+
+                return null;
+            }
+        }
         try {
             $p = WhiteboardPost::create(['kind' => $kind, 'agent_key' => $agentKey, 'author_id' => $author?->id, 'subject_user_id' => $subject->id, 'body' => $body, 'hashtags' => $tags,
                 'source_type' => $sourceType, 'source_id' => $sourceId, 'dedupe_key' => $dedupe, 'expires_at' => $kind === 'callout' ? now()->addDays(self::EXPIRY_DAYS) : now()->addDays(90)]);

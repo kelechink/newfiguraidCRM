@@ -86,6 +86,16 @@ Push to the branch, then cPanel → *Git Version Control* → *Manage* → **Upd
 - Schedule: HR nudge 09:20, daily checks 10:00, end-of-day reminders 17:15, follow-ups hourly, finance note Monday 08:30,
   GM weekly review Friday 16:30, staff points on the 1st.
 
+## WhatsApp templates
+Customers who last wrote more than 24 hours ago can only be messaged with templates Meta has approved. Create templates with the
+same names as *Admin → WhatsApp templates* (follow_up, invoice_reminder, renewal_reminder, class_reminder) in Meta Business Manager;
+the inbox shows **Send WhatsApp template** automatically when the window has closed.
+
+## Carrier billing
+New carriers default to **prepaid**. Set each carrier's cycle (7/3, 7/4…), first cycle date and low-balance threshold under Telecom → Carriers.
+Every night the system charges yesterday's usage to prepaid balances, invoices finished cycles for postpaid carriers, and opens vendor
+cycles; Finance enters each vendor's statement in Telecom → Billing cycles and differences above 1% open a dispute.
+
 ## Security setup (do these before go-live)
 1. **Cloudflare (free)**: add figuraid.com to Cloudflare, switch nameservers, set SSL to *Full (strict)*, turn on *Always use HTTPS*,
    *Bot Fight Mode* and the managed WAF rules. Turnstile keys for the forms come from the same dashboard.

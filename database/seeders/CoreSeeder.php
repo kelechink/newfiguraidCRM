@@ -110,7 +110,17 @@ class CoreSeeder extends Seeder
             \App\Models\AgentTestCase::firstOrCreate(['question' => $q], ['agent_key' => 'front_desk', 'must_include' => $inc, 'must_not_include' => $exc]);
         }
 
-        foreach (['finance.fx_basis' => 'parallel', 'agents.max_messages_per_person_per_day' => 4, 'whiteboard.callouts_enabled' => true, 'security.require_2fa_all' => true, 'security.max_record_views_per_hour' => 150, 'security.max_exports_per_day' => 3, 'inbox.sla_minutes' => 15, 'telecom.margin_alert_pct' => 2, 'finance.approval_limit_ngn' => 500000, 'finance.min_cash_ngn' => 2000000, 'payroll.pension_pct' => 8, 'payroll.nhf_pct' => 0, 'payroll.paye' => true, 'payroll.employer_pension_pct' => 10, 'payroll.nsitf' => true, 'payroll.itf' => true, 'telecom.statement_tolerance_pct' => 1] as $k => $v) {
+        // WhatsApp templates: create the same names in Meta Business Manager and wait for approval.
+        foreach ([
+            ['follow_up', 'Hello {{1}}, this is Figuraid following up on your enquiry. Reply to this message to continue the conversation.', 1],
+            ['invoice_reminder', 'Hello {{1}}, a reminder that invoice {{2}} for {{3}} is now due. Reply here if you have any questions.', 3],
+            ['renewal_reminder', 'Hello {{1}}, your {{2}} renews on {{3}}. Reply here if you need help.', 3],
+            ['class_reminder', 'Hello {{1}}, your Figure Academy class "{{2}}" starts on {{3}}. See you there!', 3],
+        ] as [$name, $body, $n]) {
+            \App\Models\WhatsappTemplate::firstOrCreate(['name' => $name, 'language' => 'en'], ['body' => $body, 'params' => $n]);
+        }
+
+        foreach (['finance.fx_basis' => 'parallel', 'agents.max_messages_per_person_per_day' => 4, 'whiteboard.callouts_enabled' => true, 'whiteboard.first_offence_private' => true, 'security.require_2fa_all' => true, 'security.max_record_views_per_hour' => 150, 'security.max_exports_per_day' => 3, 'inbox.sla_minutes' => 15, 'telecom.margin_alert_pct' => 2, 'finance.approval_limit_ngn' => 500000, 'finance.min_cash_ngn' => 2000000, 'payroll.pension_pct' => 8, 'payroll.nhf_pct' => 0, 'payroll.paye' => true, 'payroll.employer_pension_pct' => 10, 'payroll.nsitf' => true, 'payroll.itf' => true, 'telecom.statement_tolerance_pct' => 1] as $k => $v) {
             if (! Setting::find($k)) {
                 Setting::put($k, $v);
             }

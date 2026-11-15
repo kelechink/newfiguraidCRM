@@ -34,6 +34,7 @@ class WhiteboardTest extends TestCase
         parent::setUp();
         $this->seed([CoreSeeder::class, DemoSeeder::class]);
         Mail::fake();
+        Setting::put('whiteboard.first_offence_private', false); // most tests check the public board directly
         $this->staff = User::where('email', 'staff@figuraid.test')->first();
         $date = CarbonImmutable::now('Africa/Lagos')->subDay()->toDateString();
         $this->day = AttendanceDay::updateOrCreate(['user_id' => $this->staff->id, 'date' => $date], ['status' => 'late', 'minutes_late' => 14, 'first_in_at' => now()->subDay(), 'minutes_early' => 0]);
@@ -105,5 +106,17 @@ class WhiteboardTest extends TestCase
         $this->actingAs($this->makeUser('hr'));
         Livewire::test(WhiteboardPage::class)->set('retractReason', 'Power outage at the office')->call('retract', $post->id);
         $this->assertSame('Power outage at the office', $post->fresh()->retract_reason);
+    }
+
+    public function test_first_offence_is_private_and_repeat_goes_public(): void
+    {
+        Setting::put('whiteboard.first_offence_private', true);
+        $wb = app(Whiteboard::class);
+        $this->assertNull($wb->post('hr', $this->staff, ['late'], 'arrived 5 min late on Mon.', null, null, 'late:a'));
+        $this->assertFalse(WhiteboardPost::where('subject_user_id', $this->staff->id)->exists());
+        $this->assertTrue(ChatMessage::where('agent_key', 'hr')->where('body', 'like', '%Private warning: #late%')->exists());
+        $this->assertNotNull($wb->post('hr', $this->staff, ['late'], 'arrived 9 min late on Tue.', null, null, 'late:b'));
+        $this->assertNull($wb->post('hr', $this->staff, ['absent'], 'was absent on Wed.', null, null, 'absent:c')); // first of a different kind: private
+        $this->assertNotNull($wb->post('hr', $this->staff, ['perfectweek'], 'kudos are always public.'));
     }
 }

@@ -40,6 +40,11 @@ class PortalUserResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'email';
 
+    public static function canCreate(): bool
+    {
+        return false; // invite from the customer's page; customers set their own password
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema
@@ -52,9 +57,6 @@ class PortalUserResource extends Resource
                 TextInput::make('email')
                     ->label('Email address')
                     ->email()
-                    ->required(),
-                TextInput::make('password')
-                    ->password()
                     ->required(),
             ]);
     }
