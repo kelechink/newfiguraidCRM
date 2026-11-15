@@ -36,6 +36,11 @@ class AiActionResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'kind';
 
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
     public static function form(Schema $schema): Schema
     {
         return AiActionForm::configure($schema);

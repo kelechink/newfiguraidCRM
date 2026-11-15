@@ -40,4 +40,9 @@ class PayrollRun extends Model
     {
         return $this->belongsTo(User::class, 'signed_off_by_id');
     }
+
+    public function payslips(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Payslip::class);
+    }
 }

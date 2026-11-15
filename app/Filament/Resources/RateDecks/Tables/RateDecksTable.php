@@ -54,6 +54,17 @@ class RateDecksTable
                 //
             ])
             ->recordActions([
+                \Filament\Actions\Action::make('approve')->label('Approve & activate')->icon('heroicon-o-check-badge')->color('success')->requiresConfirmation()
+                    ->modalDescription('Sell decks are checked again: any route below cost or under the minimum margin blocks approval.')
+                    ->visible(fn ($record) => in_array($record->status, ['draft', 'blocked']) && \App\Authz\Access::can(auth()->user(), 'telecom.routes', 'approve') || (in_array($record->status, ['draft', 'blocked']) && auth()->user()->canDo('telecom.routes', 'edit') && auth()->user()->isRole('super_admin', 'admin', 'telecom_ops')))
+                    ->action(function ($record) {
+                        try {
+                            app(\App\Services\RateDeckService::class)->approve($record, auth()->id());
+                            \Filament\Notifications\Notification::make()->title('Deck active')->success()->send();
+                        } catch (\RuntimeException $e) {
+                            \Filament\Notifications\Notification::make()->title('Blocked')->body($e->getMessage())->danger()->persistent()->send();
+                        }
+                    }),
                 EditAction::make(),
             ])
             ->toolbarActions([
