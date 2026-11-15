@@ -32,4 +32,11 @@ class UserGrant extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
+
+    protected static function booted(): void
+    {
+        static::creating(function (UserGrant $g) {
+            $g->granted_by_id ??= auth()->id() ?? $g->user_id;
+        });
+    }
 }

@@ -229,14 +229,14 @@ final class Telecom
         $out = ['increase' => [], 'decrease' => [], 'new' => [], 'removed' => []];
         foreach ($n as $p => $r) {
             if (! array_key_exists($p, $o)) {
-                $out['new'][] = $p;
+                $out['new'][] = (string) $p;
             } elseif ($r > $o[$p]) {
-                $out['increase'][] = $p;
+                $out['increase'][] = (string) $p;
             } elseif ($r < $o[$p]) {
-                $out['decrease'][] = $p;
+                $out['decrease'][] = (string) $p;
             }
         }
-        $out['removed'] = array_values(array_diff(array_keys($o), array_keys($n)));
+        $out['removed'] = array_map('strval', array_values(array_diff(array_keys($o), array_keys($n))));
 
         return $out;
     }
