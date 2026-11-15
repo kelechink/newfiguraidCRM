@@ -86,6 +86,11 @@ class PublicController extends Controller
         abort_if(Booking::where('user_id', $user->id)->where('starts_at', $data['starts_at'])->exists(), 409, 'That time was just taken.');
         $b = Booking::create($data + ['user_id' => $user->id]);
         $user->notify(new Alert('New booking', "{$b->name} booked {$b->starts_at->format('D j M H:i')}.", null, true));
+        $ics = \App\Services\CalendarFeed::wrap([\App\Services\CalendarFeed::event("booking-$b->id", $b->starts_at, $b->starts_at->copy()->addMinutes($b->minutes), "Call with {$user->name} (Figuraid)", (string) $b->notes, false, $user->email, $b->email)], 'Figuraid', 'REQUEST');
+        try {
+            \Illuminate\Support\Facades\Mail::raw("Your call with {$user->name} is booked for {$b->starts_at->format('l j F, H:i')} (Lagos time). The invitation is attached.", fn ($m) => $m->to([$b->email, $user->email])->subject('Call booked — Figuraid')->attachData($ics, 'invite.ics', ['mime' => 'text/calendar; method=REQUEST']));
+        } catch (\Throwable) {
+        }
 
         return back()->with('status', 'Booked. You will receive a calendar invitation by email.');
     }

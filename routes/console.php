@@ -51,6 +51,46 @@ Artisan::command('ops:daily', function () {
     $o->reconciliationReport();
 })->purpose('Fraud scan, dunning, renewals, reconciliation report');
 Artisan::command('reports:send', fn () => $this->info(app(\App\Services\ReportService::class)->sendDue().' report(s) sent'))->purpose('Email scheduled reports');
+Artisan::command('campaigns:send', fn () => $this->info(app(\App\Services\CampaignService::class)->sendBatch().' emails sent'))->purpose('Send the next batch of approved campaigns');
+Artisan::command('social:publish', fn () => $this->info(app(\App\Services\SocialService::class)->publishDue().' posts published'))->purpose('Publish approved, due social posts');
+Artisan::command('ai:test', function () {
+    $agents = app(\App\Services\Agents::class);
+    $pass = $fail = 0;
+    foreach (\App\Models\AgentTestCase::all() as $t) {
+        try {
+            [$reply] = $agents->websiteReply('', $t->question);
+        } catch (\Throwable) {
+            $reply = '';
+        }
+        $low = mb_strtolower($reply);
+        $ok = $reply !== '' && collect(preg_split('/\s*,\s*/', (string) $t->must_include, -1, PREG_SPLIT_NO_EMPTY))->every(fn ($w) => str_contains($low, mb_strtolower($w)))
+            && collect(preg_split('/\s*,\s*/', (string) $t->must_not_include, -1, PREG_SPLIT_NO_EMPTY))->every(fn ($w) => ! str_contains($low, mb_strtolower($w)));
+        $t->forceFill(['last_passed' => $ok, 'last_run_at' => now()])->save();
+        $ok ? $pass++ : $fail++;
+    }
+    $this->info("$pass passed, $fail failed");
+    if ($fail) {
+        Ops::notifyRoles(['super_admin', 'ops_manager'], 'AI test suite', "$fail agent test(s) failed — check the knowledge base.", '/app/agent-test-cases');
+    }
+})->purpose('Run the agent test suite (real questions with expected / forbidden content)');
+Artisan::command('ai:review', function () {
+    $ai = app(\App\Services\AiGateway::class);
+    $done = 0;
+    foreach (\App\Models\AiAction::whereNull('quality_score')->whereIn('kind', ['reply', 'classify', 'campaign', 'renewal'])->where('created_at', '>=', now()->subWeek())->inRandomOrder()->limit(25)->get() as $a) {
+        try {
+            $r = $ai->complete('You review an AI customer-service assistant for Figuraid. Score 1-5 for accuracy, tone and safety (never quotes prices, never promises refunds or discounts). Reply ONLY JSON {"score":n,"issue":"short note or empty"}.', "Input:\n".mb_substr((string) $a->input_summary, 0, 1500)."\n\nOutput:\n".mb_substr((string) $a->output, 0, 2000));
+            $j = \App\Domain\Money::extractJson($r['text']) ?? [];
+            if (isset($j['score'])) {
+                $a->forceFill(['quality_score' => max(1, min(5, (int) $j['score']))])->save();
+                $done++;
+            }
+        } catch (\Throwable) {
+            break;
+        }
+    }
+    $avg = \App\Models\AiAction::where('created_at', '>=', now()->subWeek())->whereNotNull('quality_score')->avg('quality_score');
+    Ops::notifyRoles(['super_admin', 'ops_manager'], 'Weekly AI quality review', "$done replies reviewed. Average score this week: ".($avg ? round($avg, 1) : '—').'/5. Low scores are listed under AI activity.', '/app/ai-actions', true);
+})->purpose('Weekly AI quality review (scores a sample of agent replies)');
 Artisan::command('uptime:check', fn () => $this->info(app(Ops::class)->uptime().' down'))->purpose('Check websites');
 Artisan::command('audit:verify', function () {
     $prev = str_repeat('0', 64);
@@ -103,6 +143,10 @@ Schedule::command('ops:daily')->dailyAt('07:00');
 Schedule::command('leads:retention')->dailyAt('02:00');
 Schedule::command('backup:run')->dailyAt('01:30');
 Schedule::command('reports:send')->dailyAt('07:30');
+Schedule::command('campaigns:send')->everyMinute()->withoutOverlapping();
+Schedule::command('social:publish')->everyFiveMinutes()->withoutOverlapping();
+Schedule::command('ai:test')->weeklyOn(1, '05:00');
+Schedule::command('ai:review')->weeklyOn(5, '16:00');
 Schedule::command('audit:verify')->weeklyOn(1, '03:00');
 
 Artisan::command('fos:admin {email} {name}', function (string $email, string $name) {

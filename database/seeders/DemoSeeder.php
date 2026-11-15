@@ -183,6 +183,12 @@ class DemoSeeder extends Seeder
         BankAccount::firstOrCreate(['name' => 'Operations (GTBank)'], ['bank' => 'GTBank', 'account_number' => '0123456789', 'currency' => 'NGN', 'opening_balance' => 12500000]);
         Debt::firstOrCreate(['lender' => 'Equipment loan — Demo Bank'], ['principal' => 10000000, 'outstanding' => 6400000, 'interest_rate_pct' => 24, 'start_date' => today()->subMonths(8), 'instalment' => 650000, 'next_payment_on' => today()->addDays(9)]);
 
+        \App\Models\Campaign::firstOrCreate(['name' => 'December route offers'], ['unit_id' => $tel->id, 'brief' => 'Year-end voice offers to Africa for existing carrier customers.', 'subject' => 'Year-end routes from Figuraid', 'body' => "Hello {first_name},\n\nOur December routes to West and East Africa are live. Reply for today's rates or a test.\n\nFiguraid Telecom", 'audience' => ['lifecycle' => ['customer'], 'tags' => ['Carrier Community']], 'created_by_id' => $users['marketing']->id]);
+        \App\Models\SocialPost::firstOrCreate(['body' => 'Wholesale voice, messaging and numbers for carriers across Africa — from Abuja. Talk to our team: figuraid.com'], ['unit_id' => $tel->id, 'platform' => 'linkedin', 'status' => 'pending_approval', 'agent_key' => 'social']);
+        foreach (Contact::limit(4)->get() as $k => $ct) {
+            \App\Models\Consent::create(['contact_id' => $ct->id, 'channel' => 'email', 'granted' => $k !== 3, 'source' => 'demo']);
+        }
+
         // Academy & procurement
         $course = Course::firstOrCreate(['code' => 'CYB-101'], ['title' => 'Cybersecurity Foundations', 'fee' => 350000, 'weeks' => 12]);
         $cohort = Cohort::firstOrCreate(['name' => 'Cohort 3 — Jan 2027'], ['course_id' => $course->id, 'starts_on' => today()->addMonth(), 'coordinator_id' => $users['academy_coordinator']->id]);

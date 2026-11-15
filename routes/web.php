@@ -51,3 +51,15 @@ Route::prefix('portal')->group(function () {
         Route::post('/tickets', [\App\Http\Controllers\PortalController::class, 'ticket'])->middleware('throttle:public-forms')->name('portal.tickets');
     });
 });
+
+// v2: private calendar feeds (subscribe from Google Calendar / Outlook) and one-click unsubscribe
+Route::get('/calendar/{token}.ics', function (string $token) {
+    $u = \App\Models\User::where('calendar_token', $token)->where('status', 'active')->firstOrFail();
+
+    return response(\App\Services\CalendarFeed::forUser($u), 200, ['Content-Type' => 'text/calendar; charset=utf-8', 'Cache-Control' => 'private, max-age=900']);
+})->where('token', '[A-Za-z0-9]{48}')->middleware('throttle:60,1')->name('calendar.feed');
+Route::get('/unsubscribe/{contact}', function (\App\Models\Contact $contact) {
+    \App\Models\Consent::create(['contact_id' => $contact->id, 'channel' => 'email', 'granted' => false, 'source' => 'unsubscribe link', 'ip' => request()->ip()]);
+
+    return view('public.unsubscribed');
+})->middleware('signed')->name('unsubscribe');

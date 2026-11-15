@@ -72,7 +72,15 @@ Push to the branch, then cPanel → *Git Version Control* → *Manage* → **Upd
    Test a restore monthly (PRD §11).
 8. Run `php artisan audit:verify` — it should say "Audit chain intact".
 
+## Version 2 additions
+- **Email campaigns** send through Brevo when `BREVO_API_KEY` is set, otherwise through your cPanel SMTP. Set up SPF, DKIM and DMARC for figuraid.com first (cPanel → *Email Deliverability*), or campaigns will land in spam.
+- **Social posts**: Facebook publishes automatically with `META_PAGE_ID` + `META_PAGE_TOKEN`; Instagram also needs `META_IG_USER_ID` and a public image URL. LinkedIn and X are copy-and-post.
+- **Calendars**: each person subscribes to their private feed from *Today → My calendar* (Google: Other calendars → From URL). Bookings email an .ics invitation.
+- **CDRs**: *Telecom → CDR uploads*. Large files: split above ~50 MB (shared-hosting upload limits).
+- New cron jobs run automatically: campaigns (every minute, 150 emails per run), social publishing (5 min), AI test suite (Mon 05:00), AI quality review (Fri 16:00), scheduled reports (07:30).
+
 ## Notes for shared hosting
+- Browser push notifications when the app is closed need the PHP `gmp` extension (ask your host) or a push service; until then alerts show in the bell icon and by email.
 - Live updates use polling (inbox 15 s, notifications 30 s). Add Pusher keys later for instant updates.
 - Virus scanning: shared hosting rarely provides ClamAV to PHP. Uploads are type- and size-restricted and stored privately;
   enable cPanel *Virus Scanner* scheduled scans, or move to a VPS for on-upload scanning.
