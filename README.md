@@ -1,51 +1,59 @@
-# Figuraid OS v2
+<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
-Internal operating system for Figuraid Ltd: CRM, unified inbox, telecom wholesale billing, finance,
-HR and payroll, attendance, tasks and more, for Figure Academy, FigureWeb, Telecom and Figuraid HQ.
+<p align="center">
+<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+</p>
 
-- Architecture, data model and security plan: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
-- Built so far: login (password + lockout, server-side sessions), server-side permissions,
-  app shell (sidebar, unit switcher, light/dark), **Tasks board** and **SOP templates**.
+## About Laravel
 
-## Run locally
+Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
 
-```bash
-cp .env.example .env            # set DATABASE_URL and NEXTAUTH_SECRET (openssl rand -base64 32)
-npm install
-npm run db:migrate              # applies all migrations
-npm run db:seed                 # demo data (refuses to run in production)
-npm run dev                     # http://localhost:3000
-```
+- [Simple, fast routing engine](https://laravel.com/docs/routing).
+- [Powerful dependency injection container](https://laravel.com/docs/container).
+- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
+- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
+- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
+- [Robust background job processing](https://laravel.com/docs/queues).
+- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
 
-Demo accounts (password printed by the seed, `Figuraid-demo-2026!` by default):
+Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
-| Who | Email | Sees |
-|---|---|---|
-| Founder (Super Admin) | kelechi@figuraid.com | Every task and SOP; tasks they create are tagged **Founder** |
-| Operations Manager | amaka@figuraid.com | Everything; creates **Team lead** tasks |
-| FigureWeb lead | tunde@figuraid.com | FigureWeb tasks and SOPs only |
-| Academy lead / Telecom lead | ngozi@ / ibrahim@figuraid.com | Their unit only |
-| Staff | chidi@figuraid.com | Only their own tasks; reads their unit's SOPs |
+## Learning Laravel
 
-## Tests
+Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
 
-```bash
-npm run typecheck
-npm test                        # unit + integration (needs Postgres; uses TEST_DATABASE_URL,
-                                # default postgresql://figuraid:figuraid@localhost:5432/figuraid_it)
-```
+If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
 
-## Tasks and SOPs: how it works
+## Laravel Sponsors
 
-- **Three origins**, set by the server, never by the client: tasks created by the Super Admin
-  are **Founder**, by anyone else allowed to assign work are **Team lead**, and tasks made from
-  a schedule are **SOP**. The board filters by origin.
-- **Board**: To do, In progress, Blocked, Done. Drag with the mouse, a finger (press and hold)
-  or the keyboard (focus a card, Space, arrow keys, Space). Order is saved with fractional ranks,
-  so each move updates one row.
-- **SOP templates**: steps plus a schedule (every working day, chosen weekdays, or a day of the
-  month; public holidays skipped) and assignees. **Generate due tasks** creates one task per
-  assignee for each SOP's latest due occurrence in the last 7 days, with the steps as a checklist.
-  It's idempotent: pressing twice, or two leads pressing at once, never duplicates work.
-- **Access**: staff see and move only their own tasks; unit leads manage their unit;
-  Ops Manager and Super Admin see all units. Enforced in `src/server/modules/*` on every query.
+We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+
+### Premium Partners
+
+- **[Vehikl](https://vehikl.com)**
+- **[Tighten Co.](https://tighten.co)**
+- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
+- **[64 Robots](https://64robots.com)**
+- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
+- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
+- **[Redberry](https://redberry.international/laravel-development)**
+- **[Active Logic](https://activelogic.com)**
+
+## Contributing
+
+Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+
+## Code of Conduct
+
+In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+
+## Security Vulnerabilities
+
+If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+
+## License
+
+The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
