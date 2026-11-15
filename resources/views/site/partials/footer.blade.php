@@ -19,7 +19,7 @@
         @foreach(config('site.other_businesses') as [$n, $line, $href])
           <li><a href="{{ $href }}" @if(str_starts_with($href,'http')) target="_blank" rel="noopener" @endif>{{ $n }}</a><span>{{ $line }}</span></li>
         @endforeach</ul></div>
-      <div><h2>Legal</h2><ul><li><a href="/terms">Terms and Conditions</a></li><li><a href="/privacy">Privacy Policy</a></li></ul></div>
+      <div><h2>Legal</h2><ul><li><a href="/terms">Terms and Conditions</a></li><li><a href="/privacy">Privacy Policy</a></li><li><a href="/privacy/request">Your data rights</a></li></ul></div>
     </div>
     <div class="footer-base"><p>Copyright © {{ now()->year }} {{ $c['name'] }}. All rights reserved.</p></div>
   </div>

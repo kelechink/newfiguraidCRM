@@ -86,6 +86,19 @@ Push to the branch, then cPanel → *Git Version Control* → *Manage* → **Upd
 - Schedule: HR nudge 09:20, daily checks 10:00, end-of-day reminders 17:15, follow-ups hourly, finance note Monday 08:30,
   GM weekly review Friday 16:30, staff points on the 1st.
 
+## Security setup (do these before go-live)
+1. **Cloudflare (free)**: add figuraid.com to Cloudflare, switch nameservers, set SSL to *Full (strict)*, turn on *Always use HTTPS*,
+   *Bot Fight Mode* and the managed WAF rules. Turnstile keys for the forms come from the same dashboard.
+2. **Two-factor for everyone** is on by default (Admin → Settings). Each person scans a QR code with Google Authenticator at first sign-in;
+   keep the recovery codes. Have **two** Super Admins.
+3. **Back up `APP_KEY`** (in the server `.env`) offline, e.g. printed in a safe. Without it, encrypted salaries and bank details are lost.
+4. **Off-site backups**: cPanel/JetBackup daily to remote storage + `storage/app/private/backups`. **Restore test monthly** into a
+   staging copy (a subdomain like `staging.figuraid.com` with its own database and `APP_ENV=staging`) — also use staging to try updates first.
+5. **GitHub Actions** runs all tests and `composer audit` (known-vulnerable packages) on every push — keep it green before deploying.
+6. **Penetration test** by an outside firm before salaries and bank details are entered; fix findings, retest.
+7. Read `docs/INCIDENT_RESPONSE.md` with your leadership team (NDPA: 72-hour breach notice).
+8. Create the `security@figuraid.com` mailbox (listed in `/.well-known/security.txt`).
+
 ## Notes for shared hosting
 - Browser push notifications when the app is closed need the PHP `gmp` extension (ask your host) or a push service; until then alerts show in the bell icon and by email.
 - Live updates use polling (inbox 15 s, notifications 30 s). Add Pusher keys later for instant updates.

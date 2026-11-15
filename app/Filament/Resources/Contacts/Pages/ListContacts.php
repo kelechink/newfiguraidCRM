@@ -38,6 +38,7 @@ class ListContacts extends ListRecords
                     Storage::disk('private')->delete($data['file']);
                     Notification::make()->title('Import finished')->body("{$r['created']} added, {$r['updated']} updated, {$r['skipped']} skipped (no email or phone).")->success()->send();
                 }),
+            \App\Services\Exports::action('Customers', 'crm.contacts', fn () => \App\Filament\Resources\Contacts\ContactResource::getEloquentQuery(), ['Name' => 'display_name', 'Email' => 'email', 'Phone' => 'phone', 'Company' => 'company.name', 'Stage' => 'lifecycle', 'Tags' => 'tags', 'Source' => 'source_channel', 'Created' => 'created_at']),
             CreateAction::make(),
         ];
     }

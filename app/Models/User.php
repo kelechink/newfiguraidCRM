@@ -104,9 +104,10 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
         return ! ($this->isRole('auditor') && $this->access_expires_at?->isPast());
     }
 
+    /** Two-factor is required for everyone by default (Settings → security.require_2fa_all); privileged roles always. */
     public function requiresTwoFactor(): bool
     {
-        return (bool) $this->role?->requires_2fa;
+        return (bool) $this->role?->requires_2fa || (bool) Setting::get('security.require_2fa_all', true);
     }
 
     /** Local initials avatar (no third-party avatar service sees staff names). */

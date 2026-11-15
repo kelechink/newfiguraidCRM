@@ -74,3 +74,18 @@ Route::get('/payslips/{payslip}.pdf', function (\App\Models\Payslip $payslip) {
 
     return response(\Barryvdh\DomPDF\Facade\Pdf::loadHTML($html)->output(), 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'attachment; filename="payslip-'.$run->period_month.'.pdf"', 'Cache-Control' => 'private, no-store']);
 })->middleware('auth')->name('payslip.pdf');
+
+// NDPA data-rights requests (public)
+Route::get('/privacy/request', fn () => view('public.data-request'))->name('privacy.request');
+Route::post('/privacy/request', function (\Illuminate\Http\Request $r) {
+    $data = $r->validate(['kind' => 'required|in:access,correct,delete,object,withdraw', 'name' => 'required|string|max:120', 'email' => 'required|email|max:190', 'details' => 'nullable|string|max:2000']);
+    abort_unless(\App\Http\Controllers\SiteController::verifyTurnstile($r->input('cf-turnstile-response'), $r->ip()), 422);
+    app(\App\Services\DataRights::class)->receive($data, $r->ip());
+
+    return back()->with('status', 'Request received. Check your email and click the link to confirm it was you. We reply within 30 days.');
+})->middleware('throttle:public-forms');
+Route::get('/privacy/verify/{request}/{token}', function (\App\Models\DataRequest $request, string $token) {
+    $ok = app(\App\Services\DataRights::class)->verify($request, $token);
+
+    return view('public.data-request', ['verified' => $ok]);
+})->middleware('signed')->name('privacy.verify');

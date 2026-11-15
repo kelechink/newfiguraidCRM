@@ -68,6 +68,7 @@ final class Catalog
         'documents' => ['Document vault & renewals', 'Team', false],
         'ai.usage' => ['AI providers & usage', 'Admin', false],
         'monitoring' => ['Uptime monitoring', 'Admin', false],
+        'privacy.dsr' => ['Data-rights requests (NDPA)', 'Admin', true],
         'settings' => ['Settings, users & integrations', 'Admin', false],
         'roles' => ['Roles & permissions', 'Admin', true],
         'audit' => ['Audit log', 'Admin', true],

@@ -1,0 +1,40 @@
+name: CI
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mariadb:10.11
+        env:
+          MARIADB_DATABASE: fos_test
+          MARIADB_USER: fos
+          MARIADB_PASSWORD: fos-local-dev
+          MARIADB_ROOT_PASSWORD: root
+        ports: ['3306:3306']
+        options: --health-cmd="healthcheck.sh --connect --innodb_initialized" --health-interval=10s --health-timeout=5s --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, mbstring, intl, gd, zip, bcmath
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Dependency vulnerability check
+        run: composer audit --no-dev
+      - name: Tests
+        env:
+          DB_HOST: 127.0.0.1
+          DB_USERNAME: fos
+          DB_PASSWORD: fos-local-dev
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          php artisan test

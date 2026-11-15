@@ -13,6 +13,7 @@ class ListDeals extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            \App\Services\Exports::action('Deals', 'crm.deals', fn () => \App\Filament\Resources\Deals\DealResource::getEloquentQuery(), ['Title' => 'title', 'Stage' => 'stage.name', 'Value' => 'value', 'Currency' => 'currency', 'Status' => 'status', 'Owner' => 'owner.name', 'Expected close' => 'expected_close_on']),
             CreateAction::make(),
         ];
     }

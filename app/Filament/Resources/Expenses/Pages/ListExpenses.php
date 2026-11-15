@@ -13,6 +13,7 @@ class ListExpenses extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            \App\Services\Exports::action('Expenses', 'finance.expenses', fn () => \App\Filament\Resources\Expenses\ExpenseResource::getEloquentQuery(), ['Date' => 'date', 'Description' => 'description', 'Category' => 'category.name', 'Amount' => 'amount', 'Currency' => 'currency', 'Naira' => 'amount_ngn', 'Status' => 'status']),
             CreateAction::make(),
         ];
     }

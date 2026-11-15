@@ -13,6 +13,7 @@ class ListInvoices extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            \App\Services\Exports::action('Invoices', 'finance.invoices', fn () => \App\Filament\Resources\Invoices\InvoiceResource::getEloquentQuery(), ['Number' => 'number', 'Customer' => fn ($r) => $r->carrier?->name ?? $r->contact?->display_name, 'Currency' => 'currency', 'Total' => 'total', 'Paid' => 'amount_paid', 'Status' => 'status', 'Issued' => 'issue_date', 'Due' => 'due_date', 'Parallel rate' => 'fx_rate', 'Official rate' => 'fx_rate_official']),
             CreateAction::make(),
         ];
     }

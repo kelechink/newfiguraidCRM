@@ -39,6 +39,9 @@ class Settings extends Page
         'telecom.statement_tolerance_pct' => ['Vendor statement tolerance before a dispute (%)', 'number'],
         'whiteboard.callouts_enabled' => ['Whiteboard call-outs (#late, #absent…) switched on', 'bool'],
         'agents.max_messages_per_person_per_day' => ['Most messages one person can get from the AI colleagues per day', 'number'],
+        'security.require_2fa_all' => ['Require two-factor sign-in for all staff', 'bool'],
+        'security.max_record_views_per_hour' => ['Alert when one person opens more records than this per hour', 'number'],
+        'security.max_exports_per_day' => ['Alert when one person exports more than this per day', 'number'],
         'security.admin_ip_allowlist' => ['Admin & finance IP allowlist (comma separated, blank = any)', 'list'],
     ];
 

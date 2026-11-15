@@ -165,6 +165,11 @@ class Ops
     public function renewals(): int
     {
         $n = 0;
+        $dsr = \App\Models\DataRequest::where('status', 'verified')->where('due_on', '<=', today()->addDays(5))->count();
+        if ($dsr) {
+            self::notifyRoles(['super_admin', 'admin'], 'Data-rights requests due', "$dsr request(s) must be answered within 5 days (NDPA 30-day limit).", '/app/data-requests', true);
+            $n += $dsr;
+        }
         Document::whereNotNull('expires_on')->get()->filter(fn ($d) => in_array($d->expires_on->diffInDays(today(), true), [$d->remind_days_before, 14, 7, 1]) && $d->expires_on->isFuture())->each(function ($d) use (&$n) {
             ($d->owner ?? null)?->notify(new Alert('Renewal due', "$d->title expires on ".$d->expires_on->format('j M Y'), "/app/documents/$d->id/edit", true));
             self::notifyRoles(['admin'], 'Renewal due', "$d->title expires on ".$d->expires_on->format('j M Y'));

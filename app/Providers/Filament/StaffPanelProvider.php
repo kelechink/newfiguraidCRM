@@ -61,6 +61,6 @@ class StaffPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
             ])
-            ->authMiddleware([Authenticate::class, EnforceIpAllowlist::class, RequireContractSigned::class]);
+            ->authMiddleware([Authenticate::class, EnforceIpAllowlist::class, RequireContractSigned::class, \App\Http\Middleware\WatchBulkViewing::class]);
     }
 }

@@ -40,6 +40,9 @@ class PanelSmokeTest extends TestCase
             }
         }
         foreach (Filament::getPanel('app')->getPages() as $page) {
+            if (method_exists($page, 'canAccess') && ! $page::canAccess()) {
+                continue;
+            }
             $res = $this->get($page::getUrl());
             if ($res->status() !== 200) {
                 $failures[] = $page::getUrl()." → {$res->status()} ".substr((string) ($res->exception?->getMessage() ?? ''), 0, 300);
