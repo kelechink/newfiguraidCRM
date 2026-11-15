@@ -139,7 +139,7 @@ class DemoSeeder extends Seeder
             }
             foreach (range(1, 14) as $d) {
                 foreach ($routes as $k => [$dest, $prefix, $b, $s]) {
-                    $min = 20000 + ($d * 731 + $k * 977) % 15000 + ($d === 1 && $k === 1 ? 150000 : 0);
+                    $min = 20000 + ($d * 731 + $k * 977) % 15000 + ($d === 1 && $k === 1 ? 400000 : 0);
                     TrafficEntry::create(['date' => today()->subDays($d), 'customer_carrier_id' => $cust->id, 'vendor_carrier_id' => $vend->id, 'destination' => $dest, 'prefix' => $prefix, 'minutes' => $min, 'attempts' => (int) ($min / 2.5), 'connected' => (int) ($min / 4.1), 'sell_rate' => $s, 'buy_rate' => $b, 'currency' => 'USD', 'revenue' => round($min * $s, 4), 'cost' => round($min * $b * 1.08, 4), 'entered_by_id' => $users['telecom_ops']->id]);
                 }
             }

@@ -47,6 +47,10 @@ class DeductionsTable
                 //
             ])
             ->recordActions([
+                \Filament\Actions\Action::make('waive')->label('Waive')->color('warning')->icon('heroicon-o-hand-raised')
+                    ->visible(fn ($record) => $record->status !== 'waived' && ! $record->payslip_id && auth()->user()->canDo('hr.deductions', 'edit'))
+                    ->schema([\Filament\Forms\Components\TextInput::make('why')->label('Reason for waiving')->required()])
+                    ->action(function ($record, array $data) { $record->forceFill(['status' => 'waived', 'reason' => $record->reason.' — waived: '.$data['why']])->save(); }),
                 EditAction::make(),
             ])
             ->toolbarActions([

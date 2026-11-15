@@ -99,6 +99,14 @@ class LeaveRequestResource extends Resource
                 //
             ])
             ->recordActions([
+                \Filament\Actions\Action::make('approve')->label('Approve')->icon('heroicon-o-check')->color('success')
+                    ->visible(fn ($record) => $record->status === 'pending' && $record->user_id !== auth()->id() && auth()->user()->canDo('leave', 'approve'))
+                    ->action(function ($record) { $record->forceFill(['status' => 'approved', 'approver_id' => auth()->id(), 'decided_at' => now()])->save();
+                        foreach (\Carbon\CarbonPeriod::create($record->start_date, $record->end_date) as $d) { app(\App\Services\AttendanceService::class)->recompute($record->user, $d->toDateString()); }
+                        $record->user->notify(new \App\Notifications\Alert('Leave approved', $record->start_date->format('j M').' – '.$record->end_date->format('j M'))); }),
+                \Filament\Actions\Action::make('decline')->label('Decline')->color('danger')
+                    ->visible(fn ($record) => $record->status === 'pending' && $record->user_id !== auth()->id() && auth()->user()->canDo('leave', 'approve'))
+                    ->action(fn ($record) => $record->forceFill(['status' => 'declined', 'approver_id' => auth()->id(), 'decided_at' => now()])->save()),
                 EditAction::make(),
                 DeleteAction::make(),
             ])

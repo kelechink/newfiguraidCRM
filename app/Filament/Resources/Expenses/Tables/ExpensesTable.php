@@ -85,6 +85,21 @@ class ExpensesTable
                 //
             ])
             ->recordActions([
+                \Filament\Actions\Action::make('approve')->label('Approve')->icon('heroicon-o-check')->color('success')->requiresConfirmation()
+                    ->visible(fn ($record) => $record->status === 'requested' && auth()->user()->canDo('finance.expenses', 'approve'))
+                    ->action(function ($record) {
+                        $limit = (float) \App\Models\Setting::get('finance.approval_limit_ngn', 500000);
+                        if ($record->requested_by_id === auth()->id()) { \Filament\Notifications\Notification::make()->title('You cannot approve your own request.')->danger()->send(); return; }
+                        if ((float) $record->amount_ngn > $limit && ! auth()->user()->isRole('super_admin', 'admin')) { \Filament\Notifications\Notification::make()->title('Above the ₦'.number_format($limit).' limit — needs Admin or Super Admin.')->warning()->send(); return; }
+                        $record->forceFill(['status' => 'approved', 'approved_by_id' => auth()->id(), 'approved_at' => now()])->save();
+                        \App\Models\User::find($record->requested_by_id)?->notify(new \App\Notifications\Alert('Expense approved', $record->description));
+                    }),
+                \Filament\Actions\Action::make('reject')->label('Reject')->color('danger')->requiresConfirmation()
+                    ->visible(fn ($record) => $record->status === 'requested' && auth()->user()->canDo('finance.expenses', 'approve'))
+                    ->action(fn ($record) => $record->forceFill(['status' => 'rejected', 'approved_by_id' => auth()->id(), 'approved_at' => now()])->save()),
+                \Filament\Actions\Action::make('paid')->label('Mark paid')->color('gray')
+                    ->visible(fn ($record) => $record->status === 'approved' && auth()->user()->canDo('finance.expenses', 'edit'))
+                    ->action(fn ($record) => $record->forceFill(['status' => 'paid', 'paid_at' => now()])->save()),
                 EditAction::make(),
             ])
             ->toolbarActions([

@@ -80,6 +80,15 @@ class AttendancePunchesTable
                 //
             ])
             ->recordActions([
+                \Filament\Actions\Action::make('approve')->label('Approve punch')->icon('heroicon-o-check')->color('success')
+                    ->visible(fn ($record) => $record->review_status === 'pending' && $record->user_id !== auth()->id() && auth()->user()->canDo('attendance.review', 'approve'))
+                    ->schema([\Filament\Forms\Components\TextInput::make('review_note')->label('Reason (e.g. client visit approved)')->required()])
+                    ->action(function ($record, array $data) { $record->forceFill(['review_status' => 'approved', 'reviewed_by_id' => auth()->id(), 'review_note' => $data['review_note']])->save();
+                        app(\App\Services\AttendanceService::class)->recompute($record->user, $record->attendanceDay->date->toDateString()); }),
+                \Filament\Actions\Action::make('reject')->label('Reject')->color('danger')
+                    ->visible(fn ($record) => $record->review_status === 'pending' && auth()->user()->canDo('attendance.review', 'approve'))
+                    ->action(function ($record) { $record->forceFill(['review_status' => 'rejected', 'reviewed_by_id' => auth()->id()])->save();
+                        app(\App\Services\AttendanceService::class)->recompute($record->user, $record->attendanceDay->date->toDateString()); }),
                 EditAction::make(),
             ])
             ->toolbarActions([

@@ -20,7 +20,14 @@ use Illuminate\Support\Facades\Schedule;
 | Times are Africa/Lagos.
 */
 
-Artisan::command('fx:update', fn () => $this->table(['Currency', 'Rate', 'Accepted', 'Reason'], collect(app(FxService::class)->research())->map(fn ($v, $k) => [$k, $v['rate'], $v['accepted'] ? 'yes' : 'NO', $v['reason']])->all()))->purpose('Research today\'s parallel-market naira rates (AI web search, two-source rule)');
+Artisan::command('fx:update', function () {
+    try {
+        $this->table(['Currency', 'Rate', 'Accepted', 'Reason'], collect(app(FxService::class)->research())->map(fn ($v, $k) => [$k, $v['rate'], $v['accepted'] ? 'yes' : 'NO', $v['reason']])->all());
+    } catch (\Throwable $e) {
+        Ops::notifyRoles(['finance'], 'FX rates not updated', 'Automatic rate research failed today ('.mb_substr($e->getMessage(), 0, 120).'). Enter today\'s rates in Money → Exchange rates.', '/app/fx-rates');
+        $this->error($e->getMessage());
+    }
+})->purpose('Research today\'s parallel-market naira rates (AI web search, two-source rule)');
 Artisan::command('inbox:escalate', fn () => $this->info(app(InboxRouter::class)->escalate().' escalated'))->purpose('SLA reminders, reassignment and escalation');
 Artisan::command('attendance:close', fn () => $this->info(app(Ops::class)->closeAttendance().' staff days closed'))->purpose('Recompute yesterday (absences, no-shows)');
 Artisan::command('attendance:deductions {month?}', function ($month = null) {
