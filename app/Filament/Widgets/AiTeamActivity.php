@@ -21,8 +21,8 @@ class AiTeamActivity extends TableWidget
     {
         return $table->heading('AI team')->query(AiAgent::query()->orderBy('name'))->paginated(false)->columns([
             ColorColumn::make('color')->label(''),
-            TextColumn::make('name')->weight('bold')->description(fn ($r) => $r->role),
-            TextColumn::make('status')->badge()->color(fn ($s) => $s === 'active' ? 'success' : 'gray'),
+            TextColumn::make('name')->weight('bold')->description(fn ($record) => $record->role),
+            TextColumn::make('status')->badge()->color(fn ($state) => $state === 'active' ? 'success' : 'gray'),
             TextColumn::make('last_action')->label('Latest')->limit(80)->placeholder('Idle'),
             TextColumn::make('last_active_at')->since()->label('When'),
         ]);

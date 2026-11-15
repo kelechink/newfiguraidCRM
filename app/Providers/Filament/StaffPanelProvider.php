@@ -48,6 +48,7 @@ class StaffPanelProvider extends PanelProvider
             ->navigationGroups(array_map(fn ($g) => NavigationGroup::make($g), ['Today', 'Customers', 'Telecom', 'FigureWeb', 'Academy', 'Procurement', 'Money', 'Team', 'AI team', 'Admin']))
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
+            ->pages([\Filament\Pages\Dashboard::class])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->middleware([
                 EncryptCookies::class,

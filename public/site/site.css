@@ -1,3 +1,15 @@
+[hidden] { display: none !important; }
+/* Base reset (the Next.js build got this from Tailwind preflight) */
+*, ::before, ::after { box-sizing: border-box; border: 0 solid; }
+html, body { margin: 0; padding: 0; }
+body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+h1, h2, h3, h4, h5, h6, p, ul, ol, figure, blockquote, dl, dd { margin: 0; }
+ul, ol { list-style: none; padding: 0; }
+a { color: inherit; text-decoration: inherit; }
+button, input, select, textarea { font: inherit; color: inherit; margin: 0; }
+button { background: transparent; cursor: pointer; }
+img, svg, video, canvas { display: block; max-width: 100%; }
+address { font-style: normal; }
 html.lenis,html.lenis body{height:auto}.lenis:not(.lenis-autoToggle).lenis-stopped{overflow:clip}.lenis.lenis-smooth [data-lenis-prevent]{overscroll-behavior:contain}.lenis.lenis-smooth iframe{pointer-events:none}.lenis.lenis-autoToggle{transition-property:overflow;transition-duration:1ms;transition-behavior:allow-discrete}
 
 /* figuraid.com — public website. Scoped under .site so the staff app's tokens are untouched.

@@ -109,9 +109,14 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
         return (bool) $this->role?->requires_2fa;
     }
 
+    /** Local initials avatar (no third-party avatar service sees staff names). */
     public function getFilamentAvatarUrl(): ?string
     {
-        return null;
+        $initials = collect(preg_split('/\s+/', trim($this->name)))->filter()->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('');
+        $hue = hexdec(substr(md5($this->id ?? $this->email), 0, 2)) * 360 / 255;
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="hsl('.round($hue).',55%,38%)"/><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="26" fill="#fff">'.e($initials).'</text></svg>';
+
+        return 'data:image/svg+xml;base64,'.base64_encode($svg);
     }
 
     public function getAppAuthenticationSecret(): ?string

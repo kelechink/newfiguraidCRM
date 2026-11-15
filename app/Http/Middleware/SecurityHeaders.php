@@ -27,7 +27,7 @@ class SecurityHeaders
         $isPanel = $request->is('app', 'app/*', 'livewire/*', 'portal', 'portal/*');
         $script = $isPanel ? "'self' 'unsafe-inline' 'unsafe-eval'" : "'self' 'nonce-$nonce' https://challenges.cloudflare.com";
         $h->set('Content-Security-Policy', implode('; ', [
-            "default-src 'self'", "script-src $script", "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", "font-src 'self' data: https://fonts.gstatic.com",
+            "default-src 'self'", "script-src $script", "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.bunny.net", "font-src 'self' data: https://fonts.gstatic.com https://fonts.bunny.net",
             "img-src 'self' data: blob:", "media-src 'self'", "connect-src 'self' https://*.pusher.com wss://*.pusher.com", 'frame-src https://challenges.cloudflare.com',
             "frame-ancestors 'none'", "base-uri 'self'", "form-action 'self'", "object-src 'none'",
         ]));
