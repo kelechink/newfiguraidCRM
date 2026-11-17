@@ -2,7 +2,7 @@
 <style>.sp-t{width:100%;border-collapse:collapse;font-size:14px}.sp-t td,.sp-t th{padding:9px 8px;border-bottom:1px solid rgba(127,127,127,.18);text-align:left}.sp-t .r{text-align:right;font-variant-numeric:tabular-nums}.sp-me{background:rgba(11,111,158,.08)}.sp-neg{color:#dc2626}</style>
 <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
   <select wire:model.live="month" style="border-radius:10px;border:1px solid rgba(127,127,127,.35);padding:8px 10px;background:transparent">@foreach($months as $k => $l)<option value="{{ $k }}">{{ $l }}</option>@endforeach</select>
-  <x-filament::button size="sm" color="gray" wire:click="refreshPoints">Recalculate</x-filament::button>
+  @if($seeAll)<x-filament::button size="sm" color="gray" wire:click="refreshPoints">Recalculate</x-filament::button>@endif
   <span style="opacity:.7;font-size:13px">Calculated by code from attendance, tasks, customer replies, reports, training and targets. Amara posts the results on the 1st.</span>
 </div>
 @if($mine)

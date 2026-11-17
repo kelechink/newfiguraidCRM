@@ -80,8 +80,9 @@ class DealsBoard extends Page
         return [
             'pipeline' => $pipeline, 'pipelines' => $this->pipelines(), 'deals' => $deals,
             'ngn' => fn ($d) => FxService::toNgn((float) $d->value, $d->currency) ?? 0,
-            'quickDeal' => $this->quick ? Deal::with(['contact', 'owner', 'stage'])->find($this->quick) : null,
-            'activities' => $this->quick ? Activity::where('deal_id', $this->quick)->latest('occurred_at')->limit(8)->get() : collect(),
+            // quick view only for deals inside the user's own permission scope (the id comes from the browser)
+            'quickDeal' => $quick = $this->quick ? Access::scopeQuery(Deal::query(), auth()->user(), 'crm.deals', ['owner_id'], 'unit_id')->with(['contact', 'owner', 'stage'])->find($this->quick) : null,
+            'activities' => $quick ? Activity::where('deal_id', $quick->id)->latest('occurred_at')->limit(8)->get() : collect(),
         ];
     }
 }

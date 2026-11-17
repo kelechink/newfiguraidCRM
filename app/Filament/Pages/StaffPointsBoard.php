@@ -37,6 +37,7 @@ class StaffPointsBoard extends Page
 
     public function refreshPoints(): void
     {
+        abort_unless(Access::can(auth()->user(), 'hr.staff') || auth()->user()->isRole('ops_manager', 'unit_manager', 'super_admin', 'admin'), 403);
         app(StaffPoints::class)->recalc($this->month);
     }
 

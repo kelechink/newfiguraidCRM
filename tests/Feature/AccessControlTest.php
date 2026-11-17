@@ -204,4 +204,12 @@ class AccessControlTest extends TestCase
         $this->actingAs($this->makeUser('admin'));
         $this->assertFalse(\App\Filament\Resources\Users\UserResource::canEdit($sa));
     }
+
+    public function test_pipeline_quick_view_cannot_open_deals_outside_scope(): void
+    {
+        $staff = $this->makeUser('staff');
+        $this->actingAs($staff);
+        $other = \App\Models\Deal::where('owner_id', '!=', $staff->id)->first();
+        \Livewire\Livewire::test(\App\Filament\Pages\DealsBoard::class)->set('quick', $other->id)->assertDontSee($other->title);
+    }
 }

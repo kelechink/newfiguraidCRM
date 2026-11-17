@@ -23,7 +23,6 @@ Route::get('/s/{token}', [PublicController::class, 'survey'])->name('survey.show
 Route::post('/s/{token}', [PublicController::class, 'answerSurvey'])->middleware('throttle:public-forms')->name('survey.answer');
 Route::get('/book/{user}', [PublicController::class, 'booking'])->name('booking.show');
 Route::post('/book/{user}', [PublicController::class, 'book'])->middleware('throttle:public-forms')->name('booking.store');
-Route::get('/files/{file}', [PublicController::class, 'file'])->middleware(['signed', 'auth'])->name('files.show');
 
 // Phone clock-in for staff (PWA)
 Route::middleware('auth')->group(function () {

@@ -5,13 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Booking;
 use App\Models\Enrolment;
 use App\Models\Invoice;
-use App\Models\StoredFile;
 use App\Models\Survey;
 use App\Models\User;
 use App\Notifications\Alert;
 use App\Services\InvoiceService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class PublicController extends Controller
 {
@@ -93,11 +91,5 @@ class PublicController extends Controller
         }
 
         return back()->with('status', 'Booked. You will receive a calendar invitation by email.');
-    }
-
-    /** Private files are only ever served through short-lived signed links to signed-in staff. */
-    public function file(StoredFile $file)
-    {
-        return Storage::disk($file->disk)->download($file->path, $file->original_name);
     }
 }
