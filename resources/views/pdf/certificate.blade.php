@@ -1,11 +1,11 @@
 <!doctype html><html><head><meta charset="utf-8"><style>
 @page{margin:0}body{margin:0;font-family:DejaVu Sans,sans-serif;color:#1d1d1f}
-.frame{position:absolute;top:28px;left:28px;right:28px;bottom:28px;border:3px solid #0b6f9e;padding:56px 70px;text-align:center}
-.brand{font-size:16px;letter-spacing:4px;text-transform:uppercase;color:#0b6f9e}h1{font-size:40px;margin:24px 0 8px}
+.frame{position:absolute;top:28px;left:28px;right:28px;bottom:28px;border:3px solid #075bbc;padding:56px 70px;text-align:center}
+.brand{font-size:16px;letter-spacing:4px;text-transform:uppercase;color:#075bbc}h1{font-size:36px;margin:14px 0 6px;color:#021e52}
 .name{font-size:34px;font-weight:bold;margin:18px 0}.muted{color:#6e6e73}.qr{position:absolute;right:70px;bottom:56px;text-align:center;font-size:10px}
 .sig{position:absolute;left:70px;bottom:70px;text-align:left;font-size:12px}
-</style></head><body><div class="frame">
-<div class="brand">Figure Academy</div>
+</style></head><body>@php($logo = 'data:image/png;base64,'.base64_encode(file_get_contents(public_path('brand/logo-full-600.png'))))<div class="frame">
+<img src="{{ $logo }}" style="height:64px"><div class="brand" style="margin-top:6px">Figure Academy</div>
 <h1>Certificate of Completion</h1>
 <p class="muted">This certifies that</p>
 <div class="name">{{ $e->contact->display_name }}</div>

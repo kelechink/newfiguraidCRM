@@ -1,1 +1,1 @@
-<span class="wordmark"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9.25" stroke="currentColor" stroke-width="1.5"/><ellipse cx="12" cy="12" rx="9.25" ry="3.6" transform="rotate(-28 12 12)" stroke="#4cc9ff" stroke-width="1.5"/></svg>Figuraid</span>
+<span class="brand-logo"><img class="on-light-art" src="/brand/logo-horizontal-96.png" alt="Figuraid" width="612" height="96"><img class="on-dark-art" src="/brand/logo-horizontal-dark-96.png" alt="Figuraid" width="612" height="96"></span>

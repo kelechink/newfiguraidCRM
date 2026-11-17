@@ -7,10 +7,12 @@
 <meta name="description" content="{{ $description ?? config('site.hero.lead') }}">
 <meta property="og:title" content="Figuraid — The world, connected.">
 <meta property="og:description" content="{{ config('site.hero.lead') }}">
-<meta property="og:image" content="{{ url('/site/hero/d/127.webp') }}">
-<meta name="theme-color" content="#000000">
+<meta property="og:image" content="{{ url('/brand/og.png') }}">
+<meta name="theme-color" content="#021e52">
 <link rel="canonical" href="{{ url()->current() }}">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/brand/icon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/brand/icon-180.png">
+<link rel="manifest" href="/manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=swap">
 <link rel="stylesheet" href="/site/site.css?v={{ filemtime(public_path('site/site.css')) }}">
