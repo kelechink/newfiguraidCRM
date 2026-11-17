@@ -5,7 +5,8 @@
 <div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h1>{{ $carrier?->name ?? $p->contact->display_name }}</h1>
 <form method="post" action="{{ route('portal.logout') }}">@csrf<button class="btn" style="min-height:36px;padding:8px 14px" type="submit">Sign out</button></form></div>
 @if($carrier)<p class="muted">Currency {{ $carrier->currency }} · Billing {{ $carrier->billing_cycle }} · Increments {{ $carrier->increment_first }}/{{ $carrier->increment_next }} · Credit limit {{ number_format($carrier->credit_limit, 2) }} · Prepaid balance {{ number_format($carrier->prepaid_balance, 2) }}</p>@endif
-<p>Outstanding: <strong>{{ number_format($outstanding, 2) }}</strong></p></div>
+<p>Outstanding: <strong>{{ number_format($outstanding, 2) }}</strong></p>
+<p class="muted" style="font-size:14px">Network issues: <a href="mailto:{{ config('site.company.noc_email') }}">{{ config('site.company.noc_email') }}</a> · Billing: <a href="mailto:{{ config('site.company.billing_email') }}">{{ config('site.company.billing_email') }}</a>@if($carrier) · Send rate sheets to <a href="mailto:{{ config('mailboxes.boxes.rates.address') }}">{{ config('mailboxes.boxes.rates.address') }}</a>@endif</p></div>
 @if($carrier)
 <div class="card"><h2>Your rates</h2><table><tr><th>Destination</th><th>Prefix</th><th class="r">Rate / min</th><th>From</th></tr>
 @forelse($rates as $r)<tr><td>{{ $r->destination }}</td><td>{{ $r->prefix }}</td><td class="r">{{ number_format($r->rate, 5) }} {{ $r->currency }}</td><td>{{ $r->effective_from->format('j M Y') }}</td></tr>@empty<tr><td colspan="4">No active rates yet.</td></tr>@endforelse</table></div>

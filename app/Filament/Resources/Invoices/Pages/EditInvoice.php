@@ -30,7 +30,7 @@ class EditInvoice extends EditRecord
             Action::make('send')->label('Email to customer')->icon('heroicon-o-envelope')->requiresConfirmation()
                 ->visible(fn () => (bool) ($r->contact?->email))
                 ->action(function () use ($r) {
-                    Mail::raw("Hello,\n\nPlease find your ".($r->kind === 'quote' ? 'quote' : 'invoice')." {$r->number} for {$r->currency} ".number_format($r->total, 2).".\nView".($r->kind === 'quote' ? ' and sign' : '').": ".route('quote.show', $r->public_token)."\n\nFiguraid", fn ($m) => $m->to($r->contact->email)->subject(($r->kind === 'quote' ? 'Quote ' : 'Invoice ').$r->number));
+                    Mail::raw("Hello,\n\nPlease find your ".($r->kind === 'quote' ? 'quote' : 'invoice')." {$r->number} for {$r->currency} ".number_format($r->total, 2).".\nView".($r->kind === 'quote' ? ' and sign' : '').": ".route('quote.show', $r->public_token)."\n\nFiguraid", fn ($m) => $m->to($r->contact->email)->subject(($r->kind === 'quote' ? 'Quote ' : 'Invoice ').$r->number)->from(config('mailboxes.send_as.invoices'), 'Figuraid Billing')->replyTo(config('mailboxes.send_as.invoices')));
                     if ($r->status === 'draft') {
                         $r->forceFill(['status' => 'sent'])->save();
                     }

@@ -86,6 +86,18 @@ Push to the branch, then cPanel → *Git Version Control* → *Manage* → **Upd
 - Schedule: HR nudge 09:20, daily checks 10:00, end-of-day reminders 17:15, follow-ups hourly, finance note Monday 08:30,
   GM weekly review Friday 16:30, staff points on the 1st.
 
+## Mailboxes (rates@, noc@, sales@, billing@, info@)
+The system signs in to each mailbox itself (IMAP) — no forwarders or pipes needed:
+1. cPanel → *Email Accounts*: make sure each address exists. Add **rate@figuraid.com** as a *Forwarder* to rates@ so both spellings work.
+2. Put each mailbox password in `.env` (`MAILBOX_RATES_PASSWORD`, `MAILBOX_NOC_PASSWORD`, …). `MAILBOX_HOST` is usually `mail.figuraid.com`, port 993, SSL.
+3. Admin → *Mailboxes* shows each one's status; press **Check now** to test.
+4. rates@ is read hourly; the others every 5 minutes. Mail is only marked read — never deleted — so people can still open the
+   mailboxes in webmail or Outlook as before.
+5. Replies, invoices, broadcasts and campaigns go out **from** the matching address (billing@, rates@, sales@). If your cPanel SMTP refuses
+   to send "as" another address, log in SMTP as info@ and allow sending for the domain, or give each mailbox its own SMTP login.
+6. Vendors: tell every vendor to send rate sheets (CSV or Excel .xlsx) to rates@. Old Excel .xls files can't be read automatically —
+   they go to the inbox for a person. Verified, active vendors' rates go live straight away; new senders become vendor leads with a draft deck.
+
 ## WhatsApp templates
 Customers who last wrote more than 24 hours ago can only be messaged with templates Meta has approved. Create templates with the
 same names as *Admin → WhatsApp templates* (follow_up, invoice_reminder, renewal_reminder, class_reminder) in Meta Business Manager;

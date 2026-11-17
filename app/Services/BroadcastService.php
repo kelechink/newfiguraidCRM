@@ -59,9 +59,7 @@ class BroadcastService
             try {
                 Mail::raw($b->body."\n\nRates attached. Reply to this email to request a route or test.\n\nFiguraid Telecom", function ($m) use ($emails, $b, $csv) {
                     $m->to($emails->all())->subject($b->subject)->attachData($csv, 'figuraid-rates-'.now()->format('Y-m-d').'.csv', ['mime' => 'text/csv']);
-                    if ($reply = config('site.company.email')) {
-                        $m->replyTo($reply);
-                    }
+                    $m->from(config('mailboxes.send_as.broadcasts'), 'Figuraid Rates')->replyTo(config('mailboxes.boxes.sales.address'), 'Figuraid Sales');
                 });
                 if ($c->contact_id) {
                     Activity::create(['contact_id' => $c->contact_id, 'type' => 'email', 'summary' => "Route broadcast sent: {$b->subject}", 'data' => ['broadcast_id' => $b->id]]);

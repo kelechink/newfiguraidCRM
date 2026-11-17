@@ -99,9 +99,8 @@ class CampaignService
     private function deliver(string $to, string $subject, string $body, string $unsub): void
     {
         if ($key = config('services.brevo.key')) {
-            $from = config('mail.from');
             $r = Http::withHeaders(['api-key' => $key])->timeout(20)->post('https://api.brevo.com/v3/smtp/email', [
-                'sender' => ['email' => $from['address'], 'name' => $from['name']], 'to' => [['email' => $to]], 'subject' => $subject, 'textContent' => $body,
+                'sender' => ['email' => config('mailboxes.send_as.campaigns'), 'name' => 'Figuraid'], 'to' => [['email' => $to]], 'subject' => $subject, 'textContent' => $body,
                 'headers' => ['List-Unsubscribe' => "<$unsub>"],
             ]);
             if (! $r->successful()) {
@@ -111,7 +110,7 @@ class CampaignService
             return;
         }
         Mail::raw($body, function ($m) use ($to, $subject, $unsub) {
-            $m->to($to)->subject($subject);
+            $m->to($to)->subject($subject)->from(config('mailboxes.send_as.campaigns'), 'Figuraid');
             $m->getSymfonyMessage()->getHeaders()->addTextHeader('List-Unsubscribe', "<$unsub>");
         });
     }

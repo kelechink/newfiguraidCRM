@@ -37,6 +37,36 @@ Artisan::command('fx:official', function () {
 })->purpose('Research today\'s official (CBN/NFEM) naira rates for tax values');
 Artisan::command('billing:close', fn () => $this->info(json_encode(app(\App\Services\CarrierBilling::class)->closeCycles())))->purpose('Invoice closed carrier cycles; open vendor cycles for statement checks');
 Artisan::command('billing:prepaid', fn () => $this->info(app(\App\Services\CarrierBilling::class)->burnPrepaid().' prepaid carrier(s) charged'))->purpose('Deduct yesterday\'s usage from prepaid balances');
+Artisan::command('mail:poll {box?}', function (?string $box = null) {
+    $boxes = $box ? [$box] : array_keys(config('mailboxes.boxes'));
+    foreach ($boxes as $k) {
+        try {
+            $r = app(\App\Services\Mail\MailboxPoller::class)->poll($k);
+        } catch (\Throwable $e) {
+            $r = ['box' => $k, 'error' => mb_substr($e->getMessage(), 0, 200)];
+        }
+        \App\Models\Setting::put("mailbox.status.$k", $r + ['at' => now()->toDateTimeString()]);
+        $this->line(json_encode($r));
+    }
+})->purpose('Read new mail from the Figuraid mailboxes (rates, noc, sales, billing, info)');
+Artisan::command('mail:receive {box?}', function (?string $box = null) {
+    $raw = stream_get_contents(STDIN);
+    $this->line(json_encode(app(\App\Services\Mail\InboundEmail::class)->process($raw, $box)));
+})->purpose('Alternative to polling: cPanel "pipe to program" forwarder feeds one email on stdin');
+Artisan::command('rates:digest', function () {
+    $decks = \App\Models\RateDeck::where('direction', 'buy')->where('source', 'upload')->where('created_at', '>=', now()->subDay())->with('carrier')->get();
+    if ($decks->isEmpty()) {
+        return $this->info('No rate sheets in the last 24 hours');
+    }
+    $lines = $decks->map(function ($d) {
+        $c = $d->validation['compare'] ?? null;
+
+        return '• '.$d->carrier->name.' — '.strtoupper($d->route_type).' '.$d->rates()->count().' rates'.($c ? " ({$c['increase']} up, {$c['decrease']} down, {$c['new']} new, {$c['removed']} removed)" : '').' — '.($d->status === 'active' ? 'live' : 'awaiting approval');
+    })->implode("\n");
+    \App\Models\User::where('status', 'active')->whereHas('role', fn ($q) => $q->whereIn('key', ['super_admin', 'admin', 'finance']))->get()
+        ->each->notify(new \App\Notifications\Alert('Rate sheets received (24 h)', $lines, '/app/rate-decks', true));
+    $this->info($lines);
+})->purpose('Daily summary of vendor rate sheets received at rates@');
 Artisan::command('inbox:escalate', fn () => $this->info(app(InboxRouter::class)->escalate().' escalated'))->purpose('SLA reminders, reassignment and escalation');
 Artisan::command('attendance:close', fn () => $this->info(app(Ops::class)->closeAttendance().' staff days closed'))->purpose('Recompute yesterday (absences, no-shows)');
 Artisan::command('attendance:deductions {month?}', function ($month = null) {
@@ -162,6 +192,11 @@ Schedule::command('bank:match')->hourly();
 Schedule::command('playbooks:generate')->dailyAt('06:00');
 Schedule::command('attendance:close')->dailyAt('00:30');
 Schedule::command('attendance:deductions')->dailyAt('00:45');
+Schedule::command('mail:poll rates')->hourly()->withoutOverlapping();
+foreach (['noc', 'sales', 'billing', 'info'] as $box) {
+    Schedule::command("mail:poll $box")->everyFiveMinutes()->withoutOverlapping();
+}
+Schedule::command('rates:digest')->dailyAt('08:40');
 Schedule::command('fx:update')->dailyAt('08:15');
 Schedule::command('fx:official')->dailyAt('08:25');
 Schedule::command('billing:prepaid')->dailyAt('00:50');

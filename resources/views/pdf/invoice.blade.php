@@ -3,7 +3,7 @@ body{font-family:DejaVu Sans,sans-serif;font-size:12px;color:#1d1d1f}h1{font-siz
 </style></head><body>
 @php($logo = 'data:image/png;base64,'.base64_encode(file_get_contents(public_path('brand/logo-horizontal-96.png'))))
 <table style="margin:0"><tr><td style="border:0"><img src="{{ $logo }}" style="height:40px"><h1 style="margin-top:10px">{{ $q->kind === 'quote' ? 'Quote' : ($q->kind === 'credit' ? 'Credit note' : 'Invoice') }}</h1><p class="muted">{{ $q->number }}</p></td>
-<td class="r" style="border:0"><strong>Figuraid Ltd — {{ $q->unit->name }}</strong><br>Kano House, 72 Ralph Shodeinde Street<br>Central Business District, Abuja</td></tr></table>
+<td class="r" style="border:0"><strong>Figuraid Ltd — {{ $q->unit->name }}</strong><br>Kano House, 72 Ralph Shodeinde Street<br>Central Business District, Abuja<br>{{ config('site.company.billing_email') }}</td></tr></table>
 <p><strong>Bill to:</strong> {{ $q->carrier?->name ?? $q->contact?->display_name }}<br>Issued {{ $q->issue_date->format('j M Y') }} · Due {{ $q->due_date->format('j M Y') }}</p>
 <table><tr><th>Description</th><th class="r">Qty</th><th class="r">Unit price</th><th class="r">Amount</th></tr>
 @foreach($q->lines as $l)<tr><td>{{ $l->description }}</td><td class="r">{{ $l->quantity + 0 }}</td><td class="r">{{ number_format($l->unit_price, 4) }}</td><td class="r">{{ number_format($l->amount, 2) }}</td></tr>@endforeach

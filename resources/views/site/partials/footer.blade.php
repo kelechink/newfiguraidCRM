@@ -7,7 +7,9 @@
         <span class="brand-tagline">Innovate · Connect · Grow</span>
         <address style="font-style:normal;color:var(--ink-2);line-height:1.6">
           @foreach($c['address'] as $l)<span style="display:block">{{ $l }}</span>@endforeach
-          @if($c['email'])<a href="mailto:{{ $c['email'] }}" style="display:block">{{ $c['email'] }}</a>@endif
+          <span style="display:block;margin-top:10px">Sales: <a href="mailto:{{ $c['email'] }}">{{ $c['email'] }}</a></span>
+          <span style="display:block">General: <a href="mailto:{{ $c['info_email'] }}">{{ $c['info_email'] }}</a></span>
+          <span style="display:block">NOC: <a href="mailto:{{ $c['noc_email'] }}">{{ $c['noc_email'] }}</a></span>
           @if($c['phone'])<a href="tel:{{ preg_replace('/\s/','',$c['phone']) }}" style="display:block">{{ $c['phone'] }}</a>@endif
         </address>
         @if($c['social'])<p style="display:flex;gap:14px">@foreach($c['social'] as $n => $u)<a href="{{ $u }}" target="_blank" rel="noopener">{{ $n }}</a>@endforeach</p>@endif

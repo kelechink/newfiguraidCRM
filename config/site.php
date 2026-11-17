@@ -52,7 +52,10 @@ return [
     'company' => [
         'name' => 'Figuraid Ltd',
         'address' => ['Kano House', '72 Ralph Shodeinde Street', 'Central Business District, Abuja'],
-        'email' => env('SITE_SALES_EMAIL'),
+        'email' => env('SITE_SALES_EMAIL', 'sales@figuraid.com'),
+        'info_email' => env('SITE_INFO_EMAIL', 'info@figuraid.com'),
+        'noc_email' => env('SITE_NOC_EMAIL', 'noc@figuraid.com'),
+        'billing_email' => env('SITE_BILLING_EMAIL', 'billing@figuraid.com'),
         'phone' => env('SITE_SALES_PHONE'),
         'social' => array_filter(['LinkedIn' => env('SITE_LINKEDIN'), 'X' => env('SITE_X'), 'Instagram' => env('SITE_INSTAGRAM')]),
     ],

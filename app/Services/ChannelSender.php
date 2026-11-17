@@ -80,7 +80,10 @@ class ChannelSender
         if (! $to) {
             return false;
         }
-        Mail::raw($body, fn ($m) => $m->to($to)->subject('Re: '.($c->subject ?: 'Your message to Figuraid')));
+        $from = collect(config('mailboxes.boxes'))->first(fn ($b) => strtolower($b['address']) === strtolower((string) $c->channel_account))['address'] ?? config('mailboxes.send_as.system');
+        Mail::raw($body, function ($m) use ($to, $c, $from) {
+            $m->to($to)->subject(str_starts_with((string) $c->subject, 'Re:') ? $c->subject : 'Re: '.($c->subject ?: 'Your message to Figuraid'))->from($from, 'Figuraid')->replyTo($from);
+        });
 
         return true;
     }
