@@ -9,6 +9,7 @@
 <meta property="og:description" content="{{ config('site.hero.lead') }}">
 <meta property="og:image" content="{{ url('/brand/og.png') }}">
 <meta name="theme-color" content="#021e52">
+@include('partials.theme-head')
 <link rel="canonical" href="{{ url()->current() }}">
 <link rel="icon" href="/brand/icon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="/brand/icon-180.png">
