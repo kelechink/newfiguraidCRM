@@ -3,7 +3,7 @@
   <div class="wrap">
     <div class="footer-cols">
       <div style="display:grid;gap:14px;align-content:start;color:var(--ink)">
-        <span class="brand-logo"><img src="/brand/logo-horizontal-96.png" alt="Figuraid Ltd" width="612" height="96"></span>
+        <span class="brand-logo"><img src="/brand/logo-horizontal.svg" alt="Figuraid Ltd" width="636" height="100"></span>
         <span class="brand-tagline">Innovate · Connect · Grow</span>
         <address style="font-style:normal;color:var(--ink-2);line-height:1.6">
           @foreach($c['address'] as $l)<span style="display:block">{{ $l }}</span>@endforeach

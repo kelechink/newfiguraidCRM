@@ -12,7 +12,7 @@ input,select,textarea{width:100%;font:inherit;font-size:16px;padding:12px 14px;b
 .btn.big{width:100%;font-size:19px;min-height:64px}.flash{padding:12px 14px;border-radius:12px;background:#e8f5ee;color:var(--ok)}.flash.warn{background:#fff4e5;color:var(--warn)}
 table{width:100%;border-collapse:collapse;font-size:15px}td,th{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left}th{color:var(--ink2);font-weight:560}.r{text-align:right}
 .brand{font-weight:650;letter-spacing:-.01em;margin-bottom:20px;display:block;color:inherit;text-decoration:none}
-</style>@stack('head')</head><body><main><a class="brand" href="/" aria-label="Figuraid home"><picture><source media="(prefers-color-scheme: dark)" srcset="/brand/logo-horizontal-dark-96.png"><img src="/brand/logo-horizontal-96.png" alt="Figuraid" height="36" style="height:36px;width:auto"></picture></a>
+</style>@stack('head')</head><body><main><a class="brand" href="/" aria-label="Figuraid home"><picture><source media="(prefers-color-scheme: dark)" srcset="/brand/logo-horizontal-dark.svg"><img src="/brand/logo-horizontal.svg" alt="Figuraid" height="36" style="height:36px;width:auto"></picture></a>
 @if(session('status'))<p class="flash" role="status">{{ session('status') }}</p><br>@endif
 @if(session('warning'))<p class="flash warn" role="alert">{{ session('warning') }}</p><br>@endif
 @yield('body')</main>@stack('scripts')</body></html>

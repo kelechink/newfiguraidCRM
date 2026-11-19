@@ -1,1 +1,1 @@
-<span class="brand-logo"><img class="on-light-art" src="/brand/logo-horizontal-96.png" alt="Figuraid" width="612" height="96"><img class="on-dark-art" src="/brand/logo-horizontal-dark-96.png" alt="Figuraid" width="612" height="96"></span>
+<span class="brand-logo"><img class="on-light-art" src="/brand/logo-horizontal.svg" alt="Figuraid" width="636" height="100"><img class="on-dark-art" src="/brand/logo-horizontal-dark.svg" alt="Figuraid" width="636" height="100"></span>

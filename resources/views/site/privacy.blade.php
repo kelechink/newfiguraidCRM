@@ -2,7 +2,7 @@
 @section('content')
 <article class="wrap legal-page on-light" data-tone="light">
 <h1 class="t-h2">Privacy Policy</h1>
-<p>Version {{ config('site.privacy_version') }}. Draft for legal review before launch. Written to meet the Nigeria Data Protection Act 2023.</p>
+<p>Version {{ config('site.privacy_version') }}. Written to meet the Nigeria Data Protection Act 2023.</p>
 <h2>What we collect</h2><p>When you submit a form or chat with us: your name, company, work email, phone number, the services and destinations you ask about, and your message. We also record the date, time, IP address and the version of these terms you accepted, and whether you opted in to marketing.</p>
 <h2>Why we use it</h2><p>To reply to your enquiry, prepare quotes, onboard you as a customer or supplier, provide and bill services, meet legal and regulatory duties, and — only if you ticked the box — send you product updates and route offers.</p>
 <h2>Lawful basis</h2><p>Steps you ask us to take before a contract, performance of a contract, our legitimate interest in running and securing our business, legal obligation, and your consent for marketing, which you can withdraw at any time.</p>

@@ -2,7 +2,7 @@
 @section('content')
 <article class="wrap legal-page on-light" data-tone="light">
 <h1 class="t-h2">Terms and Conditions</h1>
-<p>Version {{ config('site.terms_version') }}. Draft for legal review before launch.</p>
+<p>Version {{ config('site.terms_version') }}.</p>
 <h2>1. Who we are</h2><p>These terms govern use of figuraid.com and enquiries made through it. The site is operated by {{ config('site.company.name') }}, {{ implode(', ', config('site.company.address')) }}, Nigeria ("Figuraid", "we").</p>
 <h2>2. Enquiries and quotes</h2><p>Information on this site describes services in general terms. It is not an offer. Rates, coverage, capacity and service levels are confirmed only in a written quote or a signed service agreement, which takes precedence over anything on this site.</p>
 <h2>3. Acceptable use</h2><p>You must not use our services or this site for fraud, unsolicited bulk messaging, traffic pumping, artificially inflated traffic, illegal content, or any purpose prohibited by the Nigerian Communications Commission or the laws of the destination country. We may suspend traffic that we reasonably believe breaches this clause.</p>
