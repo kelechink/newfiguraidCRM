@@ -25,6 +25,13 @@
   </div>
 </section>
 
+@php($tick = collect($services)->flatMap(fn ($g) => collect($g['offerings'])->pluck(0))->reject(fn ($n) => $n === 'Route quality reporting')->push('TDM on request')->values())
+<div class="ticker" data-tone="dark" aria-label="What we carry">
+  <div class="ticker-track" data-scene>
+    @foreach([0, 1] as $copy)<ul @if($copy) aria-hidden="true" @endif>@foreach($tick as $t)<li>{{ $t }}</li>@endforeach</ul>@endforeach
+  </div>
+</div>
+
 <section id="services" class="services on-light" data-tone="light" aria-labelledby="services-title" tabindex="-1">
   <div id="services-track" data-count="{{ count($services) }}">
     <div class="wrap section" id="services-panel">
@@ -42,6 +49,7 @@
             <div style="display:grid;gap:18px;align-content:start">
               <h3 class="chapter-name">{{ $s['name'] }}</h3>
               <p class="t-lead muted chapter-line">{{ $s['line'] }}</p>
+              @include('site.partials.service-art', ['key' => $s['key']])
             </div>
             <ul class="offerings" data-count="{{ count($s['offerings']) }}">
               @foreach($s['offerings'] as [$name, $detail])<li class="offering"><h4>{{ $name }}</h4><p class="muted" style="font-size:15.5px;line-height:1.5">{{ $detail }}</p></li>@endforeach
@@ -78,6 +86,23 @@
       </div>
       <svg class="map" viewBox="0 0 1000 500" data-focus="false" role="img" aria-label="World map" id="map">
         @foreach($regions as $i => $r)<path d="{{ $dots[$r['key']] }}" data-on="{{ $i === 0 ? 'true' : 'false' }}" data-region="{{ $r['key'] }}"/>@endforeach
+        @php($hubs = json_decode(file_get_contents(resource_path('routes-hubs.json')), true))
+        @php([$ax, $ay] = $hubs['abuja'])
+        <g class="routes" data-scene>
+          @foreach($regions as $i => $r)
+            <g class="route-set" data-region="{{ $r['key'] }}" data-on="{{ $i === 0 ? 'true' : 'false' }}">
+              @foreach($hubs['regions'][$r['key']] ?? [] as $j => $h)
+                @php([$hx, $hy] = $h['xy'])
+                @php($d = sqrt(($hx - $ax) ** 2 + ($hy - $ay) ** 2))
+                @php($path = 'M'.$ax.' '.$ay.' Q'.round(($ax + $hx) / 2, 1).' '.round(min($ay, $hy) - max(18, $d * 0.38), 1).' '.$hx.' '.$hy)
+                <path class="arc" d="{{ $path }}"/><path class="arc-flow" style="--j:{{ $j }}" d="{{ $path }}"/>
+                <circle class="hub" cx="{{ $hx }}" cy="{{ $hy }}" r="3"><title>{{ $h['name'] }}</title></circle>
+              @endforeach
+            </g>
+          @endforeach
+          <circle class="hq-ring" cx="{{ $ax }}" cy="{{ $ay }}" r="5"/><circle class="hq-ring d2" cx="{{ $ax }}" cy="{{ $ay }}" r="5"/>
+          <circle class="hq" cx="{{ $ax }}" cy="{{ $ay }}" r="4.5"><title>Abuja</title></circle>
+        </g>
       </svg>
     </div>
   </div>

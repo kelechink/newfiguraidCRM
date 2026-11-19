@@ -153,7 +153,7 @@
       if (focus !== undefined) map.dataset.focus = String(focus);
     };
     $$(".regions button").forEach((b) => { b.addEventListener("click", () => pick(b.dataset.region)); b.addEventListener("focus", () => pick(b.dataset.region)); });
-    $$("path", map).forEach((p) => { p.addEventListener("mouseenter", () => pick(p.dataset.region, true)); p.addEventListener("click", () => pick(p.dataset.region)); });
+    $$("path[data-region]", map).forEach((p) => { p.addEventListener("mouseenter", () => pick(p.dataset.region, true)); p.addEventListener("click", () => pick(p.dataset.region)); });
     map.addEventListener("mouseleave", () => (map.dataset.focus = "false"));
     const box = $("#coverage-video");
     if (!reduced && box) {
@@ -166,6 +166,16 @@
       }, { rootMargin: "200px 0px" }).observe(box);
     }
   }
+
+  // Living scenes: animate only while on screen (saves battery), draw lines in once
+  const scenes = $$("[data-scene]");
+  if ("IntersectionObserver" in window && !reduced) {
+    const sceneIo = new IntersectionObserver((es) => es.forEach((e) => {
+      e.target.classList.toggle("is-live", e.isIntersecting);
+      if (e.isIntersecting) e.target.classList.add("is-drawn");
+    }), { rootMargin: "60px 0px", threshold: 0.15 });
+    scenes.forEach((s) => sceneIo.observe(s));
+  } else scenes.forEach((s) => s.classList.add("is-drawn"));
 
   // Website assistant (Ada): replies from the public knowledge base, turns visitors into leads
   const chat = $("#assistant");
