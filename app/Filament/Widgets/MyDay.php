@@ -17,7 +17,7 @@ class MyDay extends StatsOverviewWidget
 
     protected function getHeading(): ?string
     {
-        return 'Good '.(now()->hour < 12 ? 'morning' : (now()->hour < 17 ? 'afternoon' : 'evening')).', '.strtok(auth()->user()->name, ' ');
+        return 'My day at a glance';
     }
 
     protected function getStats(): array

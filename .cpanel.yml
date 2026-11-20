@@ -1,11 +1,14 @@
 ---
 # cPanel → Git Version Control → "Deploy HEAD Commit" runs these in the repository folder.
-# Assumes the repo is cloned to ~/figuraid-os and figuraid.com's document root is ~/figuraid-os/public.
+# On figuraid.com the app lives in ~/public_html/figuraid-os (~/figuraid-os is a link to it) and
+# public_html/.htaccess sends figuraid.com to its public/ folder. PHP 8.3 comes from the CloudLinux
+# PHP selector (/usr/local/bin/php), with intl, fileinfo and sodium enabled.
 deployment:
   tasks:
     - export DEPLOYPATH=$HOME/figuraid-os
-    - cd $DEPLOYPATH && (command -v composer >/dev/null && composer install --no-dev --optimize-autoloader --no-interaction || php $HOME/composer.phar install --no-dev --optimize-autoloader --no-interaction)
-    - cd $DEPLOYPATH && php artisan migrate --force
-    - cd $DEPLOYPATH && php artisan db:seed --class=CoreSeeder --force
-    - cd $DEPLOYPATH && php artisan optimize:clear && php artisan optimize && php artisan filament:optimize
-    - cd $DEPLOYPATH && php artisan queue:restart
+    - export PHPBIN=$( [ -x /usr/local/bin/php ] && echo /usr/local/bin/php || echo php )
+    - cd $DEPLOYPATH && (command -v composer >/dev/null && composer install --no-dev --optimize-autoloader --no-interaction || $PHPBIN -d allow_url_fopen=1 -d memory_limit=-1 $HOME/composer.phar install --no-dev --optimize-autoloader --no-interaction)
+    - cd $DEPLOYPATH && $PHPBIN artisan migrate --force
+    - cd $DEPLOYPATH && $PHPBIN artisan db:seed --class=CoreSeeder --force
+    - cd $DEPLOYPATH && $PHPBIN artisan optimize:clear && $PHPBIN artisan optimize && $PHPBIN artisan filament:optimize
+    - cd $DEPLOYPATH && $PHPBIN artisan queue:restart

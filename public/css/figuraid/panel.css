@@ -1,0 +1,267 @@
+/*
+ * Figuraid OS — staff panel theme.
+ * Plain CSS loaded after Filament's own styles (no build step needed on cPanel).
+ * Brand: navy #021e52, Figuraid blue #075bbc, cyan #22d3ee accent.
+ */
+
+:root {
+    --fos-navy: #021e52;
+    --fos-navy-2: #06307a;
+    --fos-blue: #075bbc;
+    --fos-blue-2: #0b74e5;
+    --fos-cyan: #22d3ee;
+    --fos-violet: #6366f1;
+    --fos-bg: #eef3fa;
+    --fos-surface: #ffffff;
+    --fos-surface-2: #f6f9fe;
+    --fos-border: #dbe4f0;
+    --fos-text: #0b1b3a;
+    --fos-muted: #5b6b86;
+    --fos-shadow: 0 1px 2px rgba(2, 30, 82, .05), 0 10px 28px -18px rgba(2, 30, 82, .35);
+    --fos-radius: 16px;
+}
+
+.dark {
+    --fos-bg: #070d1a;
+    --fos-surface: #0d1628;
+    --fos-surface-2: #101c33;
+    --fos-border: #1c2a45;
+    --fos-text: #e6edf9;
+    --fos-muted: #93a3bf;
+    --fos-shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 12px 32px -18px rgba(0, 0, 0, .8);
+}
+
+/* ---------- Page background ---------- */
+.fi-body {
+    background:
+        radial-gradient(1200px 500px at 85% -10%, rgba(7, 91, 188, .10), transparent 60%),
+        radial-gradient(900px 400px at -10% 110%, rgba(34, 211, 238, .08), transparent 60%),
+        var(--fos-bg) !important;
+    background-attachment: fixed !important;
+}
+
+/* ---------- Top bar ---------- */
+.fi-topbar {
+    background:
+        linear-gradient(90deg, var(--fos-blue), var(--fos-cyan) 50%, var(--fos-violet)) top / 100% 3px no-repeat,
+        rgba(255, 255, 255, .86) !important;
+    backdrop-filter: saturate(160%) blur(12px);
+    border-bottom: 1px solid var(--fos-border) !important;
+    box-shadow: 0 8px 24px -18px rgba(2, 30, 82, .35) !important;
+}
+.dark .fi-topbar {
+    background:
+        linear-gradient(90deg, var(--fos-blue), var(--fos-cyan) 50%, var(--fos-violet)) top / 100% 3px no-repeat,
+        rgba(9, 16, 31, .86) !important;
+}
+
+/* Clock in / out pill in the top bar */
+.fos-clock-pill {
+    display: inline-flex; align-items: center; gap: .5rem;
+    padding: .45rem .9rem; border-radius: 999px;
+    font-size: .8125rem; font-weight: 600; line-height: 1; white-space: nowrap;
+    color: #fff; text-decoration: none;
+    box-shadow: 0 6px 16px -8px currentColor;
+    transition: transform .15s ease, filter .15s ease;
+}
+.fos-clock-pill:hover { transform: translateY(-1px); filter: brightness(1.06); }
+.fos-clock-pill .fos-dot { width: .5rem; height: .5rem; border-radius: 999px; background: #fff; box-shadow: 0 0 0 3px rgba(255, 255, 255, .3); }
+.fos-clock-pill.is-in { background: linear-gradient(135deg, #16a34a, #22c55e); }
+.fos-clock-pill.is-out { background: linear-gradient(135deg, #d97706, #f59e0b); }
+.fos-clock-pill.is-in .fos-dot { animation: fos-pulse 1.8s ease-in-out infinite; }
+@keyframes fos-pulse { 50% { box-shadow: 0 0 0 6px rgba(255, 255, 255, 0); } }
+@media (max-width: 640px) { .fos-clock-pill .fos-clock-pill-text { display: none; } .fos-clock-pill { padding: .45rem .7rem; } }
+
+/* ---------- Sidebar: deep navy, clearly separated from the page ---------- */
+.fi-sidebar {
+    background: linear-gradient(180deg, #021e52 0%, #03184a 45%, #04112f 100%) !important;
+    border-right: 1px solid rgba(255, 255, 255, .06) !important;
+    box-shadow: 8px 0 30px -20px rgba(2, 30, 82, .6);
+}
+.dark .fi-sidebar {
+    background: linear-gradient(180deg, #0a1b42 0%, #08132f 50%, #060d20 100%) !important;
+    border-right: 1px solid #1a2a4a !important;
+}
+.fi-sidebar-header { background: transparent !important; border-bottom: 1px solid rgba(255, 255, 255, .08) !important; box-shadow: none !important; }
+.fi-sidebar .fi-logo-light { display: none !important; }
+.fi-sidebar .fi-logo-dark { display: flex !important; }
+.fi-sidebar-nav { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, .18) transparent; }
+
+.fi-sidebar-group-label {
+    color: #7fa6e6 !important;
+    font-size: .6875rem !important; font-weight: 700 !important;
+    letter-spacing: .09em; text-transform: uppercase;
+}
+.fi-sidebar-group-collapse-btn, .fi-sidebar-group-btn svg,
+.fi-sidebar-header-controls button, .fi-sidebar-close-collapse-sidebar-btn, .fi-sidebar-open-collapse-sidebar-btn { color: #7fa6e6 !important; }
+
+.fi-sidebar-item-btn {
+    border-radius: 10px !important;
+    transition: background-color .15s ease, transform .15s ease;
+}
+.fi-sidebar-item-label { color: rgba(226, 236, 255, .82) !important; font-weight: 500; }
+.fi-sidebar-item-icon { color: rgba(167, 196, 240, .75) !important; }
+.fi-sidebar-item-btn:hover { background: rgba(255, 255, 255, .07) !important; }
+.fi-sidebar-item-btn:hover .fi-sidebar-item-label { color: #fff !important; }
+.fi-sidebar-item-btn:hover .fi-sidebar-item-icon { color: var(--fos-cyan) !important; }
+
+.fi-sidebar-item.fi-active > .fi-sidebar-item-btn {
+    background: linear-gradient(90deg, var(--fos-blue-2), var(--fos-blue)) !important;
+    box-shadow: 0 8px 18px -10px rgba(11, 116, 229, .9), inset 0 1px 0 rgba(255, 255, 255, .16);
+}
+.fi-sidebar-item.fi-active > .fi-sidebar-item-btn .fi-sidebar-item-label,
+.fi-sidebar-item.fi-active > .fi-sidebar-item-btn .fi-sidebar-item-icon { color: #fff !important; }
+.fi-sidebar-item-grouped-border-part, .fi-sidebar-item-grouped-border-part-not-first, .fi-sidebar-item-grouped-border-part-not-last { background: rgba(255, 255, 255, .14) !important; }
+.fi-sidebar-item.fi-active .fi-sidebar-item-grouped-border-part { background: var(--fos-cyan) !important; }
+
+.fi-sidebar-database-notifications-btn { color: rgba(226, 236, 255, .85) !important; }
+.fi-sidebar-database-notifications-btn:hover { background: rgba(255, 255, 255, .07) !important; }
+.fi-sidebar-footer { border-top: 1px solid rgba(255, 255, 255, .08); }
+
+/* ---------- Page header ---------- */
+.fi-header-heading {
+    color: var(--fos-text) !important;
+    font-weight: 800 !important; letter-spacing: -.025em;
+}
+.fi-header-heading::after {
+    content: ''; display: block; width: 44px; height: 4px; margin-top: .55rem; border-radius: 4px;
+    background: linear-gradient(90deg, var(--fos-blue), var(--fos-cyan));
+}
+.fi-header-subheading { color: var(--fos-muted) !important; }
+
+/* ---------- Cards: sections, tables, stats ---------- */
+.fi-section:not(.fi-section-not-contained),
+.fi-ta-ctn,
+.fi-wi-stats-overview-stat {
+    background: var(--fos-surface) !important;
+    border: 1px solid var(--fos-border) !important;
+    border-radius: var(--fos-radius) !important;
+    box-shadow: var(--fos-shadow) !important;
+}
+
+.fi-section:not(.fi-section-not-contained) > .fi-section-header {
+    background: linear-gradient(180deg, var(--fos-surface-2), var(--fos-surface));
+    border-bottom: 1px solid var(--fos-border);
+    border-top-left-radius: var(--fos-radius); border-top-right-radius: var(--fos-radius);
+}
+.fi-section-header-heading { color: var(--fos-text) !important; font-weight: 700 !important; }
+.fi-section-header-heading::before {
+    content: ''; display: inline-block; width: 4px; height: 1em; margin-right: .6rem;
+    border-radius: 3px; vertical-align: -2px;
+    background: linear-gradient(180deg, var(--fos-blue), var(--fos-cyan));
+}
+
+/* Tables */
+.fi-ta-header-cell, .fi-ta-header-cell * { color: var(--fos-muted) !important; }
+.fi-ta-header-cell { background: var(--fos-surface-2) !important; font-size: .75rem !important; text-transform: uppercase; letter-spacing: .05em; }
+.fi-ta-row:hover { background: rgba(7, 91, 188, .04) !important; }
+.dark .fi-ta-row:hover { background: rgba(34, 211, 238, .04) !important; }
+
+/* Stat cards: coloured top edge + icon chip */
+.fi-wi-stats-overview-stat { position: relative; overflow: hidden; border-top: 4px solid var(--fos-blue) !important; transition: transform .15s ease, box-shadow .15s ease; }
+.fi-wi-stats-overview-stat:hover { transform: translateY(-2px); }
+.fi-wi-stats-overview-stat:has(.fi-color-success) { border-top-color: #16a34a !important; }
+.fi-wi-stats-overview-stat:has(.fi-color-warning) { border-top-color: #f59e0b !important; }
+.fi-wi-stats-overview-stat:has(.fi-color-danger) { border-top-color: #ef4444 !important; }
+.fi-wi-stats-overview-stat:has(.fi-color-info) { border-top-color: var(--fos-cyan) !important; }
+.fi-wi-stats-overview-stat-label-ctn > svg,
+.fi-wi-stats-overview-stat-label-ctn > .fi-icon {
+    box-sizing: content-box; padding: 7px; border-radius: 10px;
+    background: rgba(7, 91, 188, .10); color: var(--fos-blue) !important;
+}
+.dark .fi-wi-stats-overview-stat-label-ctn > svg,
+.dark .fi-wi-stats-overview-stat-label-ctn > .fi-icon { background: rgba(34, 211, 238, .12); color: var(--fos-cyan) !important; }
+.fi-wi-stats-overview-stat-label { color: var(--fos-muted) !important; font-weight: 600 !important; }
+.fi-wi-stats-overview-stat-value { color: var(--fos-text) !important; font-weight: 800 !important; letter-spacing: -.02em; }
+
+/* Buttons: a touch of depth */
+.fi-btn.fi-color-primary:not(.fi-outlined) {
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, .14), rgba(255, 255, 255, 0));
+    box-shadow: 0 6px 16px -10px rgba(7, 91, 188, .9);
+}
+
+/* Dropdowns */
+.fi-dropdown-panel { border: 1px solid var(--fos-border) !important; border-radius: 14px !important; box-shadow: 0 18px 40px -20px rgba(2, 30, 82, .45) !important; }
+
+/* ---------- Dashboard clock card ---------- */
+.fos-clock-card {
+    position: relative; overflow: hidden; border-radius: 20px; color: #fff;
+    padding: 1.75rem;
+    background:
+        radial-gradient(500px 220px at 100% 0%, rgba(34, 211, 238, .35), transparent 70%),
+        radial-gradient(420px 240px at 0% 100%, rgba(99, 102, 241, .35), transparent 70%),
+        linear-gradient(135deg, #021e52 0%, #06307a 55%, #075bbc 100%);
+    box-shadow: 0 24px 48px -28px rgba(2, 30, 82, .9);
+}
+.fos-clock-card::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .18;
+    background-image: linear-gradient(rgba(255, 255, 255, .25) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, .25) 1px, transparent 1px);
+    background-size: 28px 28px;
+    mask-image: linear-gradient(90deg, transparent 30%, #000);
+}
+.fos-clock-grid { position: relative; z-index: 1; display: grid; gap: 1.5rem; grid-template-columns: 1fr; align-items: center; }
+@media (min-width: 1024px) { .fos-clock-grid { grid-template-columns: 1.3fr 1fr; } }
+.fos-clock-eyebrow { font-size: .75rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #9cc2ff; }
+.fos-clock-title { margin-top: .35rem; font-size: 1.75rem; line-height: 1.15; font-weight: 800; letter-spacing: -.02em; }
+.fos-clock-sub { margin-top: .4rem; color: rgba(226, 236, 255, .82); font-size: .9375rem; }
+.fos-clock-status { display: inline-flex; align-items: center; gap: .5rem; margin-top: 1rem; padding: .35rem .75rem; border-radius: 999px; font-size: .8125rem; font-weight: 600; background: rgba(255, 255, 255, .12); border: 1px solid rgba(255, 255, 255, .18); }
+.fos-clock-status i { width: .55rem; height: .55rem; border-radius: 999px; background: #f87171; }
+.fos-clock-status.is-ok i { background: #4ade80; } .fos-clock-status.is-late i { background: #fbbf24; } .fos-clock-status.is-done i { background: #93c5fd; }
+.fos-clock-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.25rem; }
+.fos-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: .6rem;
+    padding: .85rem 1.35rem; border-radius: 14px; font-weight: 700; font-size: .975rem;
+    text-decoration: none; transition: transform .15s ease, filter .15s ease, opacity .15s ease;
+}
+.fos-btn svg { width: 1.25rem; height: 1.25rem; }
+.fos-btn:hover { transform: translateY(-1px); filter: brightness(1.06); }
+.fos-btn-in { color: #fff; background: linear-gradient(135deg, #16a34a, #22c55e); box-shadow: 0 10px 22px -10px rgba(34, 197, 94, .9); }
+.fos-btn-out { color: #fff; background: linear-gradient(135deg, #d97706, #f59e0b); box-shadow: 0 10px 22px -10px rgba(245, 158, 11, .9); }
+.fos-btn-ghost { color: #fff; background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .22); }
+.fos-btn[aria-disabled="true"] { opacity: .38; pointer-events: none; box-shadow: none; filter: grayscale(.4); }
+.fos-clock-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.fos-fact { padding: .9rem 1rem; border-radius: 14px; background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .14); backdrop-filter: blur(6px); }
+.fos-fact-label { font-size: .72rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #9cc2ff; }
+.fos-fact-value { margin-top: .25rem; font-size: 1.25rem; font-weight: 800; letter-spacing: -.01em; }
+
+/* ---------- Sign-in, password reset and two-factor pages ---------- */
+.fi-simple-layout {
+    background:
+        radial-gradient(700px 380px at 12% 8%, rgba(34, 211, 238, .28), transparent 65%),
+        radial-gradient(760px 420px at 92% 92%, rgba(99, 102, 241, .32), transparent 65%),
+        linear-gradient(135deg, #021e52 0%, #04286a 50%, #075bbc 100%) !important;
+    position: relative;
+}
+.fi-simple-layout::before {
+    content: ''; position: fixed; inset: 0; pointer-events: none; opacity: .12;
+    background-image: linear-gradient(rgba(255, 255, 255, .35) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, .35) 1px, transparent 1px);
+    background-size: 36px 36px;
+    mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
+}
+.fi-simple-main {
+    position: relative; z-index: 1;
+    background: var(--fos-surface) !important;
+    border: 1px solid rgba(255, 255, 255, .5) !important;
+    border-radius: 24px !important;
+    box-shadow: 0 40px 80px -30px rgba(0, 8, 30, .75), 0 0 0 6px rgba(255, 255, 255, .06) !important;
+}
+.dark .fi-simple-main { border-color: #1c2a45 !important; }
+.fi-simple-header-heading { color: var(--fos-text) !important; font-weight: 800 !important; letter-spacing: -.02em; }
+.fi-simple-header-subheading { color: var(--fos-muted) !important; }
+
+.fos-login-tagline { position: fixed; z-index: 1; left: 0; right: 0; bottom: 1.25rem; margin: 0 auto; max-width: 34rem; padding: 0 1rem; text-align: center; color: rgba(226, 236, 255, .9); font-size: .9rem; }
+.fos-login-tagline strong { color: #fff; }
+
+.fos-login-divider { display: flex; align-items: center; gap: .75rem; margin: 1.25rem 0 .9rem; color: var(--fos-muted); font-size: .75rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+.fos-login-divider::before, .fos-login-divider::after { content: ''; flex: 1; height: 1px; background: var(--fos-border); }
+.fos-login-note { margin-top: .75rem; text-align: center; font-size: .78rem; color: var(--fos-muted); }
+
+/* The three sign-in buttons: "Log in here" full width, clock in / out side by side */
+.fos-login-actions .fi-ac { display: grid !important; grid-template-columns: 1fr 1fr; gap: .75rem !important; }
+.fos-login-actions .fi-ac > :first-child { grid-column: 1 / -1; }
+.fos-login-actions .fi-ac > * { width: 100%; }
+.fos-login-actions .fi-btn { min-height: 2.9rem; border-radius: 12px !important; font-weight: 700 !important; }
+.fos-login-actions .fi-btn.fi-color-success { background: linear-gradient(135deg, #16a34a, #22c55e) !important; color: #fff !important; }
+.fos-login-actions .fi-btn.fi-color-warning { background: linear-gradient(135deg, #d97706, #f59e0b) !important; color: #fff !important; }
+.fos-login-actions .fi-btn.fi-color-success .fi-icon, .fos-login-actions .fi-btn.fi-color-warning .fi-icon,
+.fos-login-actions .fi-btn.fi-color-success svg, .fos-login-actions .fi-btn.fi-color-warning svg { color: #fff !important; }

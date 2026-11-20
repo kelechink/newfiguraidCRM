@@ -14,6 +14,8 @@ use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\Support\Enums\Width;
+use Filament\View\PanelsRenderHook;
+use Illuminate\Contracts\View\View;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -34,13 +36,18 @@ class StaffPanelProvider extends PanelProvider
             ->darkModeBrandLogo(asset('brand/logo-horizontal-dark.svg'))
             ->brandLogoHeight('2.25rem')
             ->favicon(asset('brand/icon-32.png'))
-            ->login()
+            ->login(\App\Filament\Auth\Login::class)
             ->passwordReset()
             ->profile(isSimple: false)
             ->multiFactorAuthentication([AppAuthentication::make()->recoverable()])
             ->requiresMultiFactorAuthentication(fn ($user) => $user?->requiresTwoFactor() ?? false)
-            ->colors(['primary' => [50 => 'oklch(0.97 0.014 257)', 100 => 'oklch(0.94 0.03 257)', 200 => 'oklch(0.88 0.06 257)', 300 => 'oklch(0.80 0.10 257)', 400 => 'oklch(0.70 0.15 257)', 500 => 'oklch(0.60 0.17 257)', 600 => 'oklch(0.505 0.17 257)', 700 => 'oklch(0.44 0.15 257)', 800 => 'oklch(0.38 0.12 257)', 900 => 'oklch(0.32 0.10 257)', 950 => 'oklch(0.24 0.07 257)'] /* Figuraid brand blue #075bbc at 600 */, 'gray' => Color::Zinc])
+            ->colors(['primary' => [50 => 'oklch(0.97 0.014 257)', 100 => 'oklch(0.94 0.03 257)', 200 => 'oklch(0.88 0.06 257)', 300 => 'oklch(0.80 0.10 257)', 400 => 'oklch(0.70 0.15 257)', 500 => 'oklch(0.60 0.17 257)', 600 => 'oklch(0.505 0.17 257)', 700 => 'oklch(0.44 0.15 257)', 800 => 'oklch(0.38 0.12 257)', 900 => 'oklch(0.32 0.10 257)', 950 => 'oklch(0.24 0.07 257)'] /* Figuraid brand blue #075bbc at 600 */, 'gray' => Color::Slate])
             ->font('Inter')
+            // Brand theme (plain CSS, no build step) and the always-visible clock button.
+            ->renderHook(PanelsRenderHook::STYLES_AFTER, fn (): string => '<link rel="stylesheet" href="'.asset('css/figuraid/panel.css').'?v='.@filemtime(public_path('css/figuraid/panel.css')).'">')
+            ->renderHook(PanelsRenderHook::GLOBAL_SEARCH_BEFORE, fn (): View => view('filament.hooks.clock-pill'))
+            ->renderHook(PanelsRenderHook::SIMPLE_LAYOUT_END, fn (): View => view('filament.hooks.login-tagline'), scopes: \App\Filament\Auth\Login::class)
+            ->renderHook(PanelsRenderHook::AUTH_LOGIN_FORM_AFTER, fn (): string => '<p class="fos-login-note">Clock in / Clock out sign you in and open the clock page (selfie and location at Kano House).</p>')
             ->darkMode(true)
             ->spa()
             ->sidebarCollapsibleOnDesktop()

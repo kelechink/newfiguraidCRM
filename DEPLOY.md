@@ -46,6 +46,14 @@ WHMCS sync (6-hourly), bank auto-matching (hourly), playbook tasks (06:00), frau
 email (07:00), Kene's morning brief (07:45 weekdays), FX research (08:15), customer care (09:05), attendance close (00:30),
 deductions (00:45), DB backup (01:30), lead retention (02:00), audit-chain check (Mon 03:00).
 
+## figuraid.com as installed (Nov 2026)
+- App folder: `~/public_html/figuraid-os` (`~/figuraid-os` links to it). The host only serves files inside `public_html`,
+  so `public_html/.htaccess` rewrites figuraid.com/www to `figuraid-os/public/` and returns 403 for anything else under `/figuraid-os/`.
+- PHP: CloudLinux *Select PHP Version* 8.3 with `intl`, `fileinfo`, `sodium`, `opcache` and `nd_pdo_mysql` (not `pdo_mysql`, they conflict).
+  CLI and cron use `/usr/local/bin/php`. Composer is `~/composer.phar`.
+- Cron: `cd /home/figuraid/public_html/figuraid-os && /usr/local/bin/php artisan schedule:run`.
+- `os.figuraid.com` points at the same app (handy for checks). The old static site is in `~/old-site-backup-20261119`.
+
 ## 6. Updating
 Push to the branch, then cPanel → *Git Version Control* → *Manage* → **Update from Remote** → **Deploy HEAD Commit**
 (runs `.cpanel.yml`: composer, migrate, CoreSeeder, caches). Or in Terminal: `git pull && composer install --no-dev -o && php artisan migrate --force && php artisan optimize`.
