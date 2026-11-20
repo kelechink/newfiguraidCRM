@@ -38,6 +38,7 @@ class ClockCard extends Widget
         $now = now('Africa/Lagos');
 
         $status = match (true) {
+            ! $day?->first_in_at && $next === 'out' => ['Clock-in waiting for approval', 'is-late'],
             ! $day?->first_in_at => ['Not clocked in yet', ''],
             $next === 'in' => ['Clocked out · '.ucfirst(str_replace('_', ' ', $day->status)), 'is-done'],
             $day->status === 'late' => ['Clocked in · late', 'is-late'],
@@ -48,6 +49,7 @@ class ClockCard extends Widget
             'greeting' => 'Good '.($now->hour < 12 ? 'morning' : ($now->hour < 17 ? 'afternoon' : 'evening')).', '.strtok($u->name, ' '),
             'today' => $now->format('l, j F Y'),
             'next' => $next,
+            'pending' => ! $day?->first_in_at && $next === 'out',
             'status' => $status,
             'inAt' => $day?->first_in_at?->timezone('Africa/Lagos')->format('H:i'),
             'outAt' => $day?->last_out_at?->timezone('Africa/Lagos')->format('H:i'),

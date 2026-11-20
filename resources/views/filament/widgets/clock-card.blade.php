@@ -5,7 +5,9 @@
                 <div class="fos-clock-eyebrow">{{ $today }} · Kano House · 09:00–17:00</div>
                 <div class="fos-clock-title">{{ $greeting }}</div>
                 <div class="fos-clock-sub">
-                    @if ($next === 'in' && ! $inAt)
+                    @if ($pending)
+                        Your clock-in was away from Kano House, so it counts once a manager approves it. Clock out as normal before you leave.
+                    @elseif ($next === 'in' && ! $inAt)
                         Clock in from your phone when you arrive at the office.
                     @elseif ($next === 'out')
                         You're on the clock. Remember to clock out before you leave.
@@ -34,7 +36,7 @@
             <div class="fos-clock-facts">
                 <div class="fos-fact">
                     <div class="fos-fact-label">Clocked in</div>
-                    <div class="fos-fact-value">{{ $inAt ?? '—' }}</div>
+                    <div class="fos-fact-value">{{ $inAt ?? ($pending ? 'Pending' : '—') }}</div>
                 </div>
                 <div class="fos-fact">
                     <div class="fos-fact-label">Clocked out</div>
